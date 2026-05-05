@@ -1,0 +1,40 @@
+@model List<SalonBook.Models.ApplicationUser>
+@{ ViewData["Title"] = "Utilizatori"; }
+
+<div class="page-body">
+    <div class="page-header"><h2>Utilizatori (@Model.Count)</h2></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Nume</th><th>Email</th><th>Telefon</th><th>Rol</th><th>Acțiune</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td style="color:#9b9b9b">#@u.Id.Substring(0,8)</td>
+                        <td>@u.Prenume @u.Nume</td>
+                        <td>@u.Email</td>
+                        <td>@u.PhoneNumber</td>
+                        <td>
+                            @switch (u.Rol)
+                            {
+                                case "Admin": <span class="badge badge-purple">Admin</span> break;
+                                case "Detinator": <span class="badge badge-blue">Deținător</span> break;
+                                default: <span class="badge" style="background:#f5f5f4;color:#6b6b6b">Client</span> break;
+                            }
+                        </td>
+                        <td>
+                            <form asp-action="StergeUtilizator" method="post" style="display:inline"
+                                  onsubmit="return confirm('Ești sigur că vrei să ștergi acest utilizator?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@u.Id" />
+                                <button type="submit" class="btn btn-danger" style="padding:3px 10px;font-size:11px">Șterge</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

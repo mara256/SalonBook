@@ -1,0 +1,34 @@
+@{ ViewData["Title"] = "Admin Panel"; }
+
+<div class="dashboard-layout">
+    <div class="dash-sidebar">
+        <div class="dash-user">
+            <div class="dash-avatar" style="background:#EEEDFE;color:#3C3489">AD</div>
+            <div><div class="dash-name">Administrator</div><div class="dash-role">Super Admin</div></div>
+        </div>
+        <a asp-action="Index" class="dash-nav-item active"><div class="dash-dot" style="background:#7F77DD"></div>Overview</a>
+        <a asp-action="Utilizatori" class="dash-nav-item"><div class="dash-dot"></div>Utilizatori</a>
+        <a asp-action="Detinatori" class="dash-nav-item"><div class="dash-dot"></div>Deținători</a>
+        <a asp-action="Saloane" class="dash-nav-item"><div class="dash-dot"></div>Saloane</a>
+        <a asp-action="Programari" class="dash-nav-item"><div class="dash-dot"></div>Toate programările</a>
+    </div>
+
+    <div class="dash-content">
+        <div class="page-header"><h2>Overview platformă</h2></div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-val">@((ViewBag.TotalClienti as IList<SalonBook.Models.ApplicationUser>)?.Count ?? 0)</div><div class="stat-lbl">Clienți</div></div>
+            <div class="stat-card"><div class="stat-val">@ViewBag.TotalDetinatori</div><div class="stat-lbl">Deținători</div></div>
+            <div class="stat-card"><div class="stat-val">@ViewBag.TotalSaloane</div><div class="stat-lbl">Saloane</div></div>
+        </div>
+        <div class="stat-card" style="margin-bottom:16px;display:inline-block;min-width:120px">
+            <div class="stat-val">@ViewBag.TotalProgramari</div>
+            <div class="stat-lbl">Programări totale</div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a asp-action="Utilizatori" class="btn btn-primary">Gestionează utilizatori</a>
+            <a asp-action="Saloane" class="btn">Gestionează saloane</a>
+            <a asp-action="Programari" class="btn">Vezi programări</a>
+        </div>
+    </div>
+</div>

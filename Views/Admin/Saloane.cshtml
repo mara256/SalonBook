@@ -1,0 +1,57 @@
+@model List<SalonBook.Models.Salon>
+@{ ViewData["Title"] = "Saloane — Admin"; }
+
+<div class="page-body">
+    <div class="page-header">
+        <h2>Saloane (@Model.Count)</h2>
+        <p>Toate salonele înregistrate pe platformă</p>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Salon</th>
+                    <th>Deținător</th>
+                    <th>Adresă</th>
+                    <th>Servicii</th>
+                    <th>Status</th>
+                    <th>Acțiune</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td style="color:#9b9b9b">#@s.Id</td>
+                        <td style="font-weight:500">@s.Nume</td>
+                        <td>@s.Detinator?.DenumireFirma</td>
+                        <td style="color:#6b6b6b;font-size:11px">@s.Adresa</td>
+                        <td>@s.Servicii.Count servicii</td>
+                        <td>
+                            @if (s.EsteActiv)
+                            {
+                                <span class="badge badge-green">Activ</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-red">Inactiv</span>
+                            }
+                        </td>
+                        <td>
+                            <form asp-action="ToggleSalon" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="salonId" value="@s.Id" />
+                                <button type="submit" class="btn @(s.EsteActiv ? "btn-danger" : "btn-primary")"
+                                        style="padding:4px 12px;font-size:11px">
+                                    @(s.EsteActiv ? "Dezactivează" : "Activează")
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

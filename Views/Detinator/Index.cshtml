@@ -1,0 +1,62 @@
+@model List<SalonBook.Models.Programare>
+@{ ViewData["Title"] = "Dashboard Deținător"; var detinator = ViewBag.Detinator as SalonBook.Models.Detinator; }
+
+<div class="dashboard-layout">
+    <div class="dash-sidebar">
+        <div class="dash-user">
+            <div class="dash-avatar" style="background:#E1F5EE;color:#0F6E56">@detinator?.DenumireFirma.Substring(0,2).ToUpper()</div>
+            <div>
+                <div class="dash-name">@detinator?.DenumireFirma</div>
+                <div class="dash-role">Deținător</div>
+            </div>
+        </div>
+        <a asp-action="Index" class="dash-nav-item active"><div class="dash-dot" style="background:#1D9E75"></div>Dashboard</a>
+        <a asp-action="Saloane" class="dash-nav-item"><div class="dash-dot"></div>Salonul meu</a>
+        <a asp-action="Notificari" class="dash-nav-item"><div class="dash-dot"></div>Notificări</a>
+    </div>
+
+    <div class="dash-content">
+        <div class="page-header"><h2>Dashboard</h2></div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-val">@ViewBag.ProgramariAzi</div><div class="stat-lbl">Programări azi</div></div>
+            <div class="stat-card"><div class="stat-val">@ViewBag.ProgramariAsteptare</div><div class="stat-lbl">În așteptare</div></div>
+            <div class="stat-card"><div class="stat-val">@Model.Count</div><div class="stat-lbl">Total afișate</div></div>
+        </div>
+
+        <div style="font-size:13px;font-weight:500;margin-bottom:10px">Programări în așteptare</div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Client</th><th>Serviciu</th><th>Dată / Oră</th><th>Acțiune</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Where(p => p.Status == SalonBook.Models.StatusProgramare.InAsteptare))
+                    {
+                        <tr>
+                            <td>@p.Client?.Prenume @p.Client?.Nume</td>
+                            <td>@p.Serviciu?.Nume</td>
+                            <td>@p.DataOra.ToString("dd MMM · HH:mm")</td>
+                            <td>
+                                <form asp-action="ActualizeazaStatus" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="programareId" value="@p.Id" />
+                                    <input type="hidden" name="salonId" value="@p.Serviciu?.SalonId" />
+                                    <input type="hidden" name="status" value="Acceptata" />
+                                    <button type="submit" class="badge badge-green" style="border:none;cursor:pointer">Acceptă</button>
+                                </form>
+                                <form asp-action="ActualizeazaStatus" method="post" style="display:inline;margin-left:4px">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="programareId" value="@p.Id" />
+                                    <input type="hidden" name="salonId" value="@p.Serviciu?.SalonId" />
+                                    <input type="hidden" name="status" value="Respinsa" />
+                                    <button type="submit" class="badge badge-red" style="border:none;cursor:pointer">Respinge</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

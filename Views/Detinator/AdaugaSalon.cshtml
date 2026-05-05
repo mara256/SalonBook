@@ -1,0 +1,73 @@
+@model SalonBook.Models.Salon
+@{ ViewData["Title"] = "Adaugă salon"; }
+
+<div class="page-body" style="max-width:600px">
+    <div class="page-header">
+        <h2>Adaugă salon nou</h2>
+        <p>Completează informațiile salonului tău</p>
+    </div>
+
+    <form asp-action="AdaugaSalon" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger" style="margin-bottom:12px"></div>
+
+        <div class="form-group">
+            <label asp-for="Nume">Denumire salon</label>
+            <input asp-for="Nume" placeholder="ex: Glamour Studio" />
+            <span asp-validation-for="Nume" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Adresa">Adresă</label>
+            <input asp-for="Adresa" placeholder="Stradă, număr, sector, oraș" />
+            <span asp-validation-for="Adresa" class="text-danger"></span>
+        </div>
+
+        <div class="form-row">
+    <div class="form-group">
+        <label asp-for="OraDeschierii">Oră deschidere</label>
+        <input type="time" name="OraDeschierii" value="09:00" />
+    </div>
+    <div class="form-group">
+        <label asp-for="OraInchiderii">Oră închidere</label>
+        <input type="time" name="OraInchiderii" value="18:00" />
+    </div>
+    </div>
+
+        <div class="form-row">
+    <div class="form-group">
+        <label asp-for="Latitudine">Latitudine</label>
+        <input asp-for="Latitudine" placeholder="ex: 44.4268" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Longitudine">Longitudine</label>
+        <input asp-for="Longitudine" placeholder="ex: 26.1025" />
+    </div>
+    </div>
+    <div style="font-size:11px;color:#9b9b9b;margin-top:-8px;margin-bottom:12px">
+         Găsește coordonatele pe <a href="https://www.latlong.net" target="_blank" style="color:#185FA5">latlong.net</a>
+    </div>
+
+        <div class="form-group">
+            <label asp-for="Descriere">Descriere</label>
+            <textarea asp-for="Descriere" placeholder="Descrie salonul tău, echipa, produsele folosite..."></textarea>
+            <span asp-validation-for="Descriere" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Poză salon</label>
+            <input type="file" name="poza" accept="image/*"
+                   style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px;background:#f5f5f4" />
+            <span style="font-size:11px;color:#9b9b9b;margin-top:4px;display:block">Format acceptat: JPG, PNG. Max 5MB.</span>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <button type="submit" class="btn btn-primary" style="flex:1">Salvează salonul</button>
+            <a asp-action="Saloane" class="btn" style="flex:1;text-align:center">Anulează</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

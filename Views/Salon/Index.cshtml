@@ -1,0 +1,219 @@
+@model SalonBook.Models.Salon
+@{ ViewData["Title"] = Model.Nume; }
+
+<div class="salon-header">
+    <div class="salon-header-inner">
+        <div class="salon-logo" style="display:flex;align-items:center;justify-content:center;font-size:11px;color:#9b9b9b">
+            @if (!string.IsNullOrEmpty(Model.PozaUrl))
+            {
+                <img src="@Model.PozaUrl" alt="@Model.Nume" style="width:72px;height:72px;border-radius:12px;object-fit:cover" />
+            }
+            else
+            {
+                <span>Logo</span>
+            }
+        </div>
+        <div>
+            <div class="salon-name">@Model.Nume</div>
+            <div class="salon-adresa">@Model.Adresa</div>
+            <div class="salon-tags">
+                @{
+                    var acum = DateTime.Now.TimeOfDay;
+                    var esteDeschi = acum >= Model.OraDeschierii && acum <= Model.OraInchiderii;
+                }
+                @if (esteDeschi)
+                {
+                    <span class="badge badge-green">Deschis · până la @Model.OraInchiderii.ToString(@"hh\:mm")</span>
+                }
+                else
+                {
+                    <span class="badge badge-red">Închis · deschide la @Model.OraDeschierii.ToString(@"hh\:mm")</span>
+                }
+                @foreach (var cat in Model.Servicii.Select(s => s.Categorie).Distinct())
+                {
+                    <span class="badge badge-purple">@cat</span>
+                }
+            </div>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Descriere))
+    {
+        <p class="salon-desc">@Model.Descriere</p>
+    }
+</div>
+
+<div class="section">
+    <div class="section-title">Servicii disponibile</div>
+    @foreach (var serviciu in Model.Servicii)
+    {
+        <div class="serviciu-row">
+            <div>
+                <div class="serviciu-name">@serviciu.Nume</div>
+                <div class="serviciu-durata">@serviciu.DurataMinte min · <span class="badge badge-purple">@serviciu.Categorie</span></div>
+            </div>
+            <div class="serviciu-right">
+                <span class="serviciu-pret">@serviciu.Pret lei</span>
+                <a asp-controller="Booking" asp-action="SelectData" asp-route-serviciuId="@serviciu.Id" class="btn btn-primary">Rezervă</a>
+            </div>
+        </div>
+    }
+</div>
+
+@{
+    var recenzii = ViewBag.Recenzii as List<SalonBook.Models.Recenzie>;
+    var notaMedie = ViewBag.NotaMedie as string;
+    bool poateLasaRecenzie = ViewBag.PoateLasaRecenzie ?? false;
+    bool aRecenzat = ViewBag.ARecenzat ?? false;
+}
+
+<div class="section" style="border-top:0.5px solid #e5e5e5">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+            <div class="section-title" style="margin-bottom:4px">Recenzii</div>
+            @if (notaMedie != null)
+            {
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:20px;font-weight:500;color:#1a1a1a">@notaMedie</span>
+                    <span style="color:#BA7517;font-size:16px">★★★★★</span>
+                    <span style="font-size:12px;color:#6b6b6b">(@recenzii?.Count recenzii)</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (User.Identity?.IsAuthenticated == true && poateLasaRecenzie && !aRecenzat)
+    {
+        <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:16px;background:#fafaf9">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Lasă o recenzie</div>
+            <form asp-controller="Client" asp-action="AdaugaRecenzie" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="salonId" value="@Model.Id" />
+
+                <div style="margin-bottom:12px">
+                    <div style="font-size:12px;color:#6b6b6b;margin-bottom:6px">Nota ta</div>
+                    <div style="display:flex;gap:8px" id="stele-container">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <label style="cursor:pointer">
+                                <input type="radio" name="nota" value="@i" style="display:none" />
+                                <span class="stea" data-val="@i" style="font-size:28px;color:#e5e5e5;transition:color .1s">★</span>
+                            </label>
+                        }
+                    </div>
+                    <div style="font-size:12px;color:#9b9b9b;margin-top:4px" id="nota-text">Selectează o notă</div>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size:12px;color:#6b6b6b">Comentariu (opțional)</label>
+                    <textarea name="comentariu" placeholder="Descrie experiența ta..."
+                              style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px;background:#fff;height:80px;resize:none"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Trimite recenzia</button>
+            </form>
+        </div>
+    }
+
+    @if (recenzii == null || !recenzii.Any())
+    {
+        <p style="color:#9b9b9b;font-size:13px">Nicio recenzie încă.</p>
+    }
+    else
+    {
+        @foreach (var r in recenzii)
+        {
+            <div style="padding:14px 0;border-bottom:0.5px solid #f0f0f0">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:32px;height:32px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#3C3489">
+                            @r.Client?.Prenume?.Substring(0,1)@r.Client?.Nume?.Substring(0,1)
+                        </div>
+                        <div>
+                            <div style="font-size:13px;font-weight:500">@r.Client?.Prenume @r.Client?.Nume</div>
+                            <div style="font-size:11px;color:#9b9b9b">@r.DataCreare.ToString("dd MMM yyyy")</div>
+                        </div>
+                    </div>
+                    <div style="color:#BA7517;font-size:14px">
+                        @for (int i = 0; i < r.Nota; i++) { <span>★</span> }
+                        @for (int i = r.Nota; i < 5; i++) { <span style="color:#e5e5e5">★</span> }
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(r.Comentariu))
+                {
+                    <p style="font-size:13px;color:#444;margin-top:8px;margin-left:42px">@r.Comentariu</p>
+                }
+            </div>
+        }
+    }
+
+    <script>
+        const stele = document.querySelectorAll('.stea');
+        let notaSelectata = 0;
+
+        stele.forEach(stea => {
+            stea.addEventListener('mouseover', () => {
+                const val = parseInt(stea.dataset.val);
+                stele.forEach(s => {
+                    s.style.color = parseInt(s.dataset.val) <= val ? '#BA7517' : '#e5e5e5';
+                });
+            });
+
+            stea.addEventListener('mouseout', () => {
+                stele.forEach(s => {
+                    s.style.color = parseInt(s.dataset.val) <= notaSelectata ? '#BA7517' : '#e5e5e5';
+                });
+            });
+
+            stea.addEventListener('click', () => {
+                notaSelectata = parseInt(stea.dataset.val);
+                const texte = ['', 'Foarte slab', 'Slab', 'Ok', 'Bun', 'Excelent'];
+                document.getElementById('nota-text').textContent = texte[notaSelectata];
+                stea.previousElementSibling.checked = true;
+            });
+        });
+    </script>
+</div>
+
+@if (Model.Latitudine != null && Model.Longitudine != null)
+{
+    <div class="section" style="border-top:0.5px solid #e5e5e5">
+        <div class="section-title">Locație</div>
+        <div id="map-salon" style="height:300px;border-radius:12px;border:0.5px solid #e5e5e5;overflow:hidden"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        const map = L.map('map-salon').setView([@Model.Latitudine, @Model.Longitudine], 15);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19,
+            crossOrigin: true
+        }).addTo(map);
+
+        setTimeout(() => { map.invalidateSize(); }, 100);
+
+        const pinMov = L.divIcon({
+            html: `<div style="
+                width:28px;height:28px;
+                background:#3C3489;
+                border:2px solid #fff;
+                border-radius:50% 50% 50% 0;
+                transform:rotate(-45deg);
+                box-shadow:0 2px 6px rgba(0,0,0,0.3)
+            "></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 28],
+            popupAnchor: [0, -28],
+            className: ''
+        });
+
+        const marker = L.marker([@Model.Latitudine, @Model.Longitudine], { icon: pinMov }).addTo(map);
+        marker.bindPopup(`
+            <div style="font-family:sans-serif;min-width:160px">
+                <div style="font-size:13px;font-weight:500;margin-bottom:4px">@Model.Nume</div>
+                <div style="font-size:11px;color:#6b6b6b">@Model.Adresa</div>
+            </div>
+        `).openPopup();
+    </script>
+}

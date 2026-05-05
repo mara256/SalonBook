@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SalonBook</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sb-body">
+
+        <a asp-controller="Home" asp-action="Index" class="sb-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H14v-5h-4v5H4a1 1 0 0 1-1-1z"/></svg>
+            Acasă
+        </a>
+
+        @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home")
+        {
+            <div class="sb-divider"></div>
+            <div class="sb-item" onclick="toggleFiltrePanel()" style="cursor:pointer;user-select:none" id="btn-filtre-sb">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                Filtre &amp; Sortare
+                <svg id="filtre-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;margin-left:auto;transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+
+            <div id="sb-filtre-panel" style="display:none;padding:0 8px 8px 8px;overflow:hidden">
+
+                <div style="font-size:11px;font-weight:500;color:#9b9b9b;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px 4px">Preț maxim</div>
+                <a href="?@(Context.Request.Query["categorie"].Count > 0 ? "categorie=" + Context.Request.Query["categorie"] + "&" : "")@(Context.Request.Query["sortare"].Count > 0 ? "sortare=" + Context.Request.Query["sortare"] : "")"
+                   style="display:block;font-size:13px;padding:5px 8px;border-radius:6px;text-decoration:none;color:@(Context.Request.Query["pretMax"].Count == 0 ? "#3C3489" : "#6b6b6b");background:@(Context.Request.Query["pretMax"].Count == 0 ? "#EEEDFE" : "transparent")">
+                    Orice preț
+                </a>
+                @foreach (var pret in new[] { ("50", "până la 50 lei"), ("100", "până la 100 lei"), ("200", "până la 200 lei"), ("500", "până la 500 lei") })
+                {
+                    var isActivePret = Context.Request.Query["pretMax"] == pret.Item1;
+                    <a href="?@(Context.Request.Query["categorie"].Count > 0 ? "categorie=" + Context.Request.Query["categorie"] + "&" : "")pretMax=@pret.Item1@(Context.Request.Query["sortare"].Count > 0 ? "&sortare=" + Context.Request.Query["sortare"] : "")"
+                       style="display:block;font-size:13px;padding:5px 8px;border-radius:6px;text-decoration:none;color:@(isActivePret ? "#3C3489" : "#6b6b6b");background:@(isActivePret ? "#EEEDFE" : "transparent")">
+                        @pret.Item2
+                    </a>
+                }
+
+                <div style="font-size:11px;font-weight:500;color:#9b9b9b;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px 4px">Sortare</div>
+                @foreach (var sort in new[] { ("nume", "A-Z"), ("pret_asc", "Preț crescător"), ("pret_desc", "Preț descrescător"), ("rating", "Rating") })
+                {
+                    var isActiveSort = Context.Request.Query["sortare"] == sort.Item1;
+                    <a href="?@(Context.Request.Query["categorie"].Count > 0 ? "categorie=" + Context.Request.Query["categorie"] + "&" : "")@(Context.Request.Query["pretMax"].Count > 0 ? "pretMax=" + Context.Request.Query["pretMax"] + "&" : "")sortare=@sort.Item1"
+                       style="display:block;font-size:13px;padding:5px 8px;border-radius:6px;text-decoration:none;color:@(isActiveSort ? "#3C3489" : "#6b6b6b");background:@(isActiveSort ? "#EEEDFE" : "transparent")">
+                        @sort.Item2
+                    </a>
+                }
+
+                @if (Context.Request.Query["categorie"].Count > 0 || Context.Request.Query["pretMax"].Count > 0 || Context.Request.Query["sortare"].Count > 0)
+                {
+                    <a href="/" style="display:block;font-size:12px;padding:6px 8px;margin-top:6px;color:#A32D2D;text-decoration:none">✕ Resetează filtrele</a>
+                }
+            </div>
+            <div class="sb-divider"></div>
+        }
+
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            @if (User.IsInRole("Client"))
+            {
+                <a asp-controller="Client" asp-action="Index" class="sb-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Client" ? "active" : "")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Programările mele
+                </a>
+                <a asp-controller="Client" asp-action="Notificari" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    Notificări
+                    <span id="badge-notif" style="display:none;margin-left:auto;background:#3C3489;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;padding:0 4px;align-items:center;justify-content:center;flex-shrink:0"></span>
+                </a>
+                <a asp-controller="Client" asp-action="Profil" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Profilul meu
+                </a>
+            }
+            @if (User.IsInRole("Detinator"))
+            {
+                <a asp-controller="Detinator" asp-action="Index" class="sb-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Detinator" ? "active" : "")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    Dashboard
+                </a>
+                <a asp-controller="Detinator" asp-action="Saloane" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0 2 2 2 2 0 0 0 2-2"/><path d="M5 21V11m14 10V11M9 21v-6h6v6"/></svg>
+                    Salonul meu
+                </a>
+                <a asp-controller="Detinator" asp-action="Notificari" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    Notificări
+                    <span id="badge-notif" style="display:none;margin-left:auto;background:#3C3489;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;padding:0 4px;align-items:center;justify-content:center;flex-shrink:0"></span>
+                </a>
+                <a asp-controller="Detinator" asp-action="Statistici" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    Statistici
+                </a>
+            }
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Index" class="sb-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "active" : "")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Admin Panel
+                </a>
+                <a asp-controller="Admin" asp-action="Utilizatori" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Utilizatori
+                </a>
+                <a asp-controller="Admin" asp-action="Saloane" class="sb-item">Saloane</a>
+                <a asp-controller="Admin" asp-action="Programari" class="sb-item">Toate programările</a>
+                <a asp-controller="Admin" asp-action="Statistici" class="sb-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    Statistici
+                </a>
+            }
+        }
+    </div>
+
+    <div class="sb-footer">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="sb-user-block">
+                <div class="sb-avatar">@User.Identity.Name?.Substring(0,2).ToUpper()</div>
+                <div>
+                    <div class="sb-user-name">@User.Identity.Name</div>
+                    <div class="sb-user-role">
+                        @if (User.IsInRole("Admin")) { <span>Admin</span> }
+                        else if (User.IsInRole("Detinator")) { <span>Deținător</span> }
+                        else { <span>Client</span> }
+                    </div>
+                </div>
+            </div>
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sb-btn-logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Deconectare
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" class="sb-btn-login">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Autentificare
+            </a>
+            <a asp-controller="Account" asp-action="Register" class="sb-btn-register">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                Înregistrare
+            </a>
+        }
+    </div>
+</div>
+
+<div class="topbar">
+    <button class="hbtn" id="hbtn" onclick="toggleSidebar()">
+        <svg id="hico" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="5" width="16" height="2" rx="1" fill="currentColor"/>
+            <rect x="3" y="10" width="16" height="2" rx="1" fill="currentColor"/>
+            <rect x="3" y="15" width="16" height="2" rx="1" fill="currentColor"/>
+        </svg>
+    </button>
+    <a asp-controller="Home" asp-action="Index" class="topbar-logo">SalonBook</a>
+    <div style="width:44px"></div>
+</div>
+
+<div class="main-content">
+    @if (TempData["Succes"] != null)
+    {
+        <div class="alert alert-success">@TempData["Succes"]</div>
+    }
+    @if (TempData["Eroare"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Eroare"]</div>
+    }
+    @RenderBody()
+</div>
+
+<script src="~/js/site.js"></script>
+<script>
+    function toggleFiltrePanel() {
+        const panel = document.getElementById('sb-filtre-panel');
+        const arrow = document.getElementById('filtre-arrow');
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('categorie') || params.has('pretMax') || params.has('sortare')) {
+            const panel = document.getElementById('sb-filtre-panel');
+            const arrow = document.getElementById('filtre-arrow');
+            if (panel) { panel.style.display = 'block'; arrow.style.transform = 'rotate(180deg)'; }
+        }
+    });
+
+    async function incarcaNotificari() {
+        try {
+            const res = await fetch('/Account/NotificariCount');
+            const count = await res.json();
+            if (count > 0) {
+                const badge = document.getElementById('badge-notif');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = 'flex';
+                }
+            }
+        } catch(e) {}
+    }
+
+    @if (User.Identity!.IsAuthenticated)
+    {
+        <text>incarcaNotificari();</text>
+    }
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

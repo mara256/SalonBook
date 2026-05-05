@@ -1,0 +1,42 @@
+@{ ViewData["Title"] = "Alege data și ora"; var serviciu = ViewBag.Serviciu as SalonBook.Models.Serviciu; }
+
+<div class="page-body">
+    <div class="steps-bar">
+        <div class="step-item"><div class="step-circle done">1</div><div class="step-label">Serviciu</div></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle curr">2</div><div class="step-label">Dată &amp; oră</div></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle">3</div><div class="step-label">Confirmare</div></div>
+    </div>
+
+    <div style="background:#f5f5f4;border-radius:8px;padding:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+            <div style="font-size:13px;font-weight:500">@serviciu?.Nume</div>
+            <div style="font-size:12px;color:#6b6b6b">@serviciu?.DurataMinte min · @serviciu?.Pret lei</div>
+        </div>
+        <a asp-controller="Salon" asp-action="Index" asp-route-id="@serviciu?.SalonId" style="font-size:12px;color:#185FA5">Schimbă</a>
+    </div>
+
+    <div style="font-size:13px;font-weight:500;margin-bottom:10px">Alege data</div>
+    <div class="date-row" id="date-container"></div>
+
+    <div style="font-size:13px;font-weight:500;margin:16px 0 10px">Ore disponibile</div>
+    <div class="time-grid" id="time-container">
+        <div style="color:#9b9b9b;font-size:12px">Se încarcă...</div>
+    </div>
+
+    <form asp-action="Confirma" method="post" style="margin-top:24px">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="serviciuId" value="@ViewBag.ServiciuId" />
+        <input type="hidden" name="dataOra" id="selected-time" />
+        <button type="submit" id="btn-continua" class="btn btn-primary btn-block" disabled>
+            Confirmă programarea
+        </button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => initBooking(@ViewBag.ServiciuId));
+    </script>
+}

@@ -1,0 +1,47 @@
+@model SalonBook.Models.Detinator
+@{ ViewData["Title"] = "Înregistrare deținător"; }
+
+<div class="form-card" style="max-width:480px">
+    <div class="form-title">Devino deținător de salon</div>
+    <div class="form-sub">Completează datele firmei tale pentru a adăuga saloane pe platformă</div>
+
+    <form asp-action="Inregistrare" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger" style="margin-bottom:12px"></div>
+
+        <div class="form-group">
+            <label asp-for="DenumireFirma">Denumire firmă</label>
+            <input asp-for="DenumireFirma" placeholder="ex: Glamour Studio SRL" />
+            <span asp-validation-for="DenumireFirma" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="AdresaFirma">Adresă firmă</label>
+            <input asp-for="AdresaFirma" placeholder="Stradă, număr, sector, oraș" />
+            <span asp-validation-for="AdresaFirma" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Telefon">Număr de telefon</label>
+            <input asp-for="Telefon" placeholder="07xx xxx xxx" />
+            <span asp-validation-for="Telefon" class="text-danger"></span>
+        </div>
+
+        <div style="background:#EAF3DE;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#3B6D11">
+            După înregistrare, rolul tău va fi actualizat la <strong>Deținător</strong> și vei putea adăuga saloane.
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <input type="checkbox" name="SiClient" id="siClient" style="width:auto" />
+            <label for="siClient" style="font-size:13px;color:#1a1a1a;cursor:pointer;margin:0">
+                Vreau să pot face și programări ca client
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Înregistrează firma</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

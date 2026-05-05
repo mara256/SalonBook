@@ -1,0 +1,60 @@
+@model SalonBook.Models.ApplicationUser
+@{ ViewData["Title"] = "Profilul meu"; }
+
+<div class="dashboard-layout">
+    <div class="dash-sidebar">
+        <div class="dash-user">
+            <div class="dash-avatar">@User.Identity!.Name?.Substring(0,2).ToUpper()</div>
+            <div>
+                <div class="dash-name">@User.Identity.Name</div>
+                <div class="dash-role">Client</div>
+            </div>
+        </div>
+        <a asp-action="Index" class="dash-nav-item"><div class="dash-dot"></div>Programările mele</a>
+        <a asp-action="Notificari" class="dash-nav-item"><div class="dash-dot"></div>Notificări</a>
+        <a asp-action="Profil" class="dash-nav-item active"><div class="dash-dot" style="background:#7F77DD"></div>Profilul meu</a>
+    </div>
+
+    <div class="dash-content">
+        <div class="page-header">
+            <h2>Profilul meu</h2>
+            <p>Actualizează datele tale personale</p>
+        </div>
+
+        <form asp-action="Profil" method="post" style="max-width:480px">
+            @Html.AntiForgeryToken()
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Prenume</label>
+                    <input type="text" name="Prenume" value="@Model.Prenume" placeholder="Prenume" />
+                </div>
+                <div class="form-group">
+                    <label>Nume</label>
+                    <input type="text" name="Nume" value="@Model.Nume" placeholder="Nume" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" value="@Model.Email" disabled
+                       style="background:#f5f5f4;color:#9b9b9b;cursor:not-allowed" />
+                <span style="font-size:11px;color:#9b9b9b">Email-ul nu poate fi modificat</span>
+            </div>
+
+            <div class="form-group">
+                <label>Telefon</label>
+                <input type="text" name="Telefon" value="@Model.PhoneNumber" placeholder="07xx xxx xxx" />
+            </div>
+
+            <div class="form-group">
+                <label>Adresă</label>
+                <input type="text" name="Adresa" value="@Model.Adresa" placeholder="Stradă, număr, oraș" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px">
+                Salvează modificările
+            </button>
+        </form>
+    </div>
+</div>

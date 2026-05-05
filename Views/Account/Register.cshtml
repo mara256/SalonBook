@@ -1,0 +1,95 @@
+@model SalonBook.ViewModels.RegisterViewModel
+@{ ViewData["Title"] = "Înregistrare"; }
+
+<div class="form-card">
+    <div class="form-title">Creează cont</div>
+
+    <form asp-action="Register" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger" style="margin-bottom:12px"></div>
+
+        <div class="form-group">
+            <label>Tip cont</label>
+            <select name="TipCont" id="tipCont" onchange="toggleDetinator(this.value)">
+                <option value="Client">Client — vreau să fac programări</option>
+                <option value="Detinator">Deținător — am un salon</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label asp-for="Prenume">Prenume</label>
+                <input asp-for="Prenume" placeholder="Ana" />
+                <span asp-validation-for="Prenume" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Nume">Nume</label>
+                <input asp-for="Nume" placeholder="Ionescu" />
+                <span asp-validation-for="Nume" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Email">Email</label>
+            <input asp-for="Email" placeholder="email@exemplu.ro" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Telefon">Telefon</label>
+            <input asp-for="Telefon" placeholder="07xx xxx xxx" />
+            <span asp-validation-for="Telefon" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Adresa">Adresă</label>
+            <input asp-for="Adresa" placeholder="Stradă, număr, oraș" />
+            <span asp-validation-for="Adresa" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Parola">Parolă</label>
+            <input asp-for="Parola" type="password" placeholder="min. 8 caractere" />
+            <span asp-validation-for="Parola" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ConfirmaParola">Confirmă parola</label>
+            <input asp-for="ConfirmaParola" type="password" placeholder="repetă parola" />
+            <span asp-validation-for="ConfirmaParola" class="text-danger"></span>
+        </div>
+
+        <div id="sectiuneDetinator" style="display:none">
+            <hr style="border:none;border-top:0.5px solid #e5e5e5;margin:14px 0"/>
+            <div style="font-size:12px;color:#6b6b6b;margin-bottom:12px">Date firmă</div>
+            <div class="form-group">
+                <label>Denumire firmă</label>
+                <input name="DenumireFirma" placeholder="ex: Glamour Studio SRL"/>
+            </div>
+            <div class="form-group">
+                <label>Adresă firmă</label>
+                <input name="AdresaFirma" placeholder="Stradă, număr, oraș"/>
+            </div>
+            <div class="form-group">
+                <label>Telefon firmă</label>
+                <input name="TelefonFirma" placeholder="07xx xxx xxx"/>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Creează cont</button>
+    </form>
+
+    <hr class="form-divider" />
+    <div class="form-link">Ai deja cont? <a asp-action="Login">Autentifică-te</a></div>
+</div>
+
+<script>
+function toggleDetinator(val) {
+    document.getElementById('sectiuneDetinator').style.display =
+        val === 'Detinator' ? 'block' : 'none';
+}
+</script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

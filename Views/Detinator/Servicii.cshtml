@@ -1,0 +1,83 @@
+@model SalonBook.Models.Salon
+@{ ViewData["Title"] = "Servicii — " + Model.Nume; }
+
+<div class="page-body">
+    <div class="page-header">
+        <h2>Servicii — @Model.Nume</h2>
+        <p>Adaugă și gestionează serviciile oferite</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start">
+
+        <!-- Lista servicii existente -->
+        <div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Servicii adăugate (@Model.Servicii.Count)</div>
+            @if (!Model.Servicii.Any())
+            {
+                <p style="color:#9b9b9b;font-size:13px">Niciun serviciu adăugat încă.</p>
+            }
+            @foreach (var s in Model.Servicii)
+            {
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:0.5px solid #e5e5e5;border-radius:8px;margin-bottom:8px">
+                    <div>
+                        <div style="font-size:13px;font-weight:500">@s.Nume</div>
+                        <div style="font-size:11px;color:#6b6b6b;margin-top:3px">
+                            <span class="badge badge-purple">@s.Categorie</span>
+                            &nbsp;@s.DurataMinte min
+                        </div>
+                    </div>
+                    <div style="font-size:14px;font-weight:500">@s.Pret lei</div>
+                </div>
+            }
+        </div>
+
+        <!-- Formular adaugare serviciu nou -->
+        <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:20px;background:#fafaf9">
+            <div style="font-size:14px;font-weight:500;margin-bottom:16px">Adaugă serviciu nou</div>
+            <form asp-action="AdaugaServiciu" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SalonId" value="@Model.Id" />
+
+                <div class="form-group">
+                    <label>Nume serviciu</label>
+                    <input name="Nume" placeholder="ex: Tuns + coafat" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Categorie</label>
+                    <select name="Categorie" required>
+                        <option value="">Selectează categoria</option>
+                        <option value="Coafor">Coafor</option>
+                        <option value="Frizerie">Frizerie</option>
+                        <option value="Manichiura">Manichiură</option>
+                        <option value="Proceduri estetice">Proceduri estetice</option>
+                        <option value="Masaj">Masaj</option>
+                        <option value="Machiaj">Machiaj</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descriere</label>
+                    <textarea name="Descriere" placeholder="Descriere scurtă..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Durată (minute)</label>
+                        <input name="DurataMinte" type="number" min="1" step="1" placeholder="60" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Preț (lei)</label>
+                        <input name="Pret" type="number" min="0" step="1" placeholder="120" required />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Adaugă serviciu</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="margin-top:16px">
+        <a asp-action="Saloane" class="btn">← Înapoi la saloane</a>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+@model List<SalonBook.Models.Programare>
+@{ ViewData["Title"] = "Programările mele"; }
+
+<div class="dashboard-layout">
+    <div class="dash-sidebar">
+        <div class="dash-user">
+            <div class="dash-avatar">@User.Identity!.Name?.Substring(0,2).ToUpper()</div>
+            <div>
+                <div class="dash-name">@User.Identity.Name</div>
+                <div class="dash-role">Client</div>
+            </div>
+        </div>
+        <a asp-action="Index" class="dash-nav-item active"><div class="dash-dot" style="background:#7F77DD"></div>Programările mele</a>
+        <a asp-action="Notificari" class="dash-nav-item"><div class="dash-dot"></div>Notificări</a>
+    </div>
+
+    <div class="dash-content">
+        <div class="page-header">
+            <h2>Programările mele</h2>
+            <p>Urmărește statusul rezervărilor tale</p>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <p style="color:#6b6b6b;font-size:13px">Nu ai nicio programare. <a asp-controller="Home" asp-action="Index" style="color:#185FA5">Caută un salon</a></p>
+        }
+
+        @foreach (var p in Model)
+        {
+            <div class="prog-card">
+                <div class="prog-icon">
+                    @if (!string.IsNullOrEmpty(p.Serviciu?.Salon?.PozaUrl))
+                    {
+                        <img src="@p.Serviciu.Salon.PozaUrl" alt="" />
+                    }
+                </div>
+                <div style="flex:1">
+                    <div class="prog-name">@p.Serviciu?.Nume — @p.Serviciu?.Salon?.Nume</div>
+                    <div class="prog-detail">@p.DataOra.ToString("ddd, dd MMM yyyy · HH:mm") · @p.Serviciu?.DurataMinte min</div>
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+                        @switch (p.Status)
+                        {
+                            case SalonBook.Models.StatusProgramare.InAsteptare:
+                                <span class="badge badge-amber">În așteptare</span>
+                                <form asp-controller="Client" asp-action="AnuleazaProgramare" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button type="submit" class="badge badge-red"
+                                            style="border:none;cursor:pointer"
+                                            onclick="return confirm('Ești sigur că vrei să anulezi această programare?')">
+                                        Anulează
+                                    </button>
+                                </form>
+                                break;
+                            case SalonBook.Models.StatusProgramare.Acceptata:
+                                <span class="badge badge-green">Acceptată</span>
+                                break;
+                            case SalonBook.Models.StatusProgramare.Respinsa:
+                                <span class="badge badge-red">Respinsă</span>
+                                break;
+                            case SalonBook.Models.StatusProgramare.Anulata:
+                                <span class="badge badge-red">Anulată</span>
+                                break;
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

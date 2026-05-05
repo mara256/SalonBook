@@ -1,0 +1,105 @@
+@{ ViewData["Title"] = "Statistici"; }
+
+<div class="dashboard-layout">
+    <div class="dash-sidebar">
+        <div class="dash-user">
+            <div class="dash-avatar" style="background:#EEEDFE;color:#3C3489">AD</div>
+            <div><div class="dash-name">Administrator</div><div class="dash-role">Super Admin</div></div>
+        </div>
+        <a asp-action="Index" class="dash-nav-item"><div class="dash-dot" style="background:#7F77DD"></div>Overview</a>
+        <a asp-action="Utilizatori" class="dash-nav-item"><div class="dash-dot"></div>Utilizatori</a>
+        <a asp-action="Detinatori" class="dash-nav-item"><div class="dash-dot"></div>Deținători</a>
+        <a asp-action="Saloane" class="dash-nav-item"><div class="dash-dot"></div>Saloane</a>
+        <a asp-action="Programari" class="dash-nav-item"><div class="dash-dot"></div>Toate programările</a>
+        <a asp-action="Statistici" class="dash-nav-item active"><div class="dash-dot" style="background:#7F77DD"></div>Statistici</a>
+    </div>
+
+    <div class="dash-content">
+        <div class="page-header"><h2>Statistici platformă</h2></div>
+
+        <!-- Status programari -->
+        <div style="margin-bottom:24px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Programări după status</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-val" style="color:#633806">@ViewBag.InAsteptare</div>
+                    <div class="stat-lbl">În așteptare</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" style="color:#3B6D11">@ViewBag.Acceptate</div>
+                    <div class="stat-lbl">Acceptate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" style="color:#A32D2D">@ViewBag.Respinse</div>
+                    <div class="stat-lbl">Respinse</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafic programari pe luna -->
+        <div style="margin-bottom:24px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Programări pe lună (ultimele 6 luni)</div>
+            <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:20px">
+                <canvas id="chartLuni" height="80"></canvas>
+            </div>
+        </div>
+
+        <!-- Top saloane -->
+        <div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Top 5 saloane după programări</div>
+            <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:20px">
+                <canvas id="chartSaloane" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    const programariPeLuna = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ProgramariPeLuna));
+    const topSaloane = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TopSaloane));
+
+    new Chart(document.getElementById('chartLuni'), {
+        type: 'bar',
+        data: {
+            labels: programariPeLuna.map(p => p.luna),
+            datasets: [{
+                label: 'Programări',
+                data: programariPeLuna.map(p => p.count),
+                backgroundColor: '#EEEDFE',
+                borderColor: '#3C3489',
+                borderWidth: 1.5,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('chartSaloane'), {
+        type: 'bar',
+        data: {
+            labels: topSaloane.map(s => s.nume),
+            datasets: [{
+                label: 'Programări',
+                data: topSaloane.map(s => s.count),
+                backgroundColor: ['#EEEDFE', '#E1F5EE', '#FAEEDA', '#FCEBEB', '#E6F1FB'],
+                borderColor: ['#3C3489', '#0F6E56', '#633806', '#A32D2D', '#0C447C'],
+                borderWidth: 1.5,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+</script>

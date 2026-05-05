@@ -1,0 +1,42 @@
+@model SalonBook.ViewModels.LoginViewModel
+@{ ViewData["Title"] = "Autentificare"; }
+
+<div class="form-card">
+    <div class="form-title">Intră în cont</div>
+    <div class="form-sub">Completează datele de autentificare</div>
+
+    <form asp-action="Login" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger" style="margin-bottom:12px"></div>
+
+        <div class="form-group">
+            <label asp-for="Email">Email</label>
+            <input asp-for="Email" placeholder="email@exemplu.ro" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Parola">Parolă</label>
+            <input asp-for="Parola" type="password" placeholder="••••••••" />
+            <span asp-validation-for="Parola" class="text-danger"></span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b;cursor:pointer">
+                <input asp-for="TineLogat" type="checkbox" style="width:auto" /> Ține-mă minte
+            </label>
+            <a href="#" style="font-size:12px;color:#185FA5">Ai uitat parola?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Autentificare</button>
+    </form>
+
+    <hr class="form-divider" />
+    <div class="form-link">Nu ai cont? <a asp-action="Register">Înregistrează-te</a></div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

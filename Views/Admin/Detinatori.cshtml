@@ -1,0 +1,39 @@
+@model List<SalonBook.Models.Detinator>
+@{ ViewData["Title"] = "Deținători — Admin"; }
+
+<div class="page-body">
+    <div class="page-header">
+        <h2>Deținători (@Model.Count)</h2>
+        <p>Toate firmele înregistrate pe platformă</p>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Denumire firmă</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Adresă firmă</th>
+                    <th>Saloane</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model)
+                {
+                    <tr>
+                        <td style="color:#9b9b9b">#@d.Id</td>
+                        <td style="font-weight:500">@d.DenumireFirma</td>
+                        <td>@d.User?.Email</td>
+                        <td>@d.Telefon</td>
+                        <td style="color:#6b6b6b;font-size:11px">@d.AdresaFirma</td>
+                        <td>
+                            <span class="badge badge-blue">@d.Saloane.Count saloane</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

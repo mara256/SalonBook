@@ -1,0 +1,83 @@
+@model List<SalonBook.Models.Programare>
+@{ ViewData["Title"] = "Toate programările — Admin"; }
+
+<div class="page-body">
+    <div class="page-header">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+        <h2>Toate programările</h2>
+        <p>Gestionează toate programările din platformă</p>
+    </div>
+    <a asp-action="ExportPDF" class="btn btn-primary" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export PDF
+    </a>
+    </div>  
+        <h2>Toate programările (@Model.Count)</h2>
+        <p>Vizualizare completă a tuturor programărilor din platformă</p>
+    </div>
+
+    <!-- Sumar status -->
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="stat-card" style="min-width:100px;display:inline-block">
+            <div class="stat-val" style="font-size:18px">@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.InAsteptare)</div>
+            <div class="stat-lbl">În așteptare</div>
+        </div>
+        <div class="stat-card" style="min-width:100px;display:inline-block">
+            <div class="stat-val" style="font-size:18px">@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Acceptata)</div>
+            <div class="stat-lbl">Acceptate</div>
+        </div>
+        <div class="stat-card" style="min-width:100px;display:inline-block">
+            <div class="stat-val" style="font-size:18px">@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Respinsa)</div>
+            <div class="stat-lbl">Respinse</div>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Client</th>
+                    <th>Email client</th>
+                    <th>Salon</th>
+                    <th>Serviciu</th>
+                    <th>Dată / Oră</th>
+                    <th>Status</th>
+                    <th>Creat la</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td style="color:#9b9b9b">#@p.Id</td>
+                        <td>@p.Client?.Prenume @p.Client?.Nume</td>
+                        <td style="color:#6b6b6b;font-size:11px">@p.Client?.Email</td>
+                        <td>@p.Serviciu?.Salon?.Nume</td>
+                        <td>@p.Serviciu?.Nume</td>
+                        <td>@p.DataOra.ToString("dd MMM yyyy · HH:mm")</td>
+                        <td>
+                            @switch (p.Status)
+                            {
+                                case SalonBook.Models.StatusProgramare.InAsteptare:
+                                    <span class="badge badge-amber">În așteptare</span>
+                                    break;
+                                case SalonBook.Models.StatusProgramare.Acceptata:
+                                    <span class="badge badge-green">Acceptată</span>
+                                    break;
+                                case SalonBook.Models.StatusProgramare.Respinsa:
+                                    <span class="badge badge-red">Respinsă</span>
+                                    break;
+                                case SalonBook.Models.StatusProgramare.Anulata:
+                                    <span class="badge badge-red">Anulată</span>
+                                    break;
+                            }
+                        </td>
+                        <td style="color:#9b9b9b;font-size:11px">@p.DataCreare.ToString("dd MMM · HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

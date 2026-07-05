@@ -1,37 +1,25 @@
 @model List<SalonBook.Models.Notificare>
 @{ ViewData["Title"] = "Notificări"; }
 
-<div class="dashboard-layout">
-    <div class="dash-sidebar">
-        <div class="dash-user">
-            <div class="dash-avatar" style="background:#E1F5EE;color:#0F6E56">GS</div>
-            <div><div class="dash-name">Deținător</div><div class="dash-role">Salon</div></div>
-        </div>
-        <a asp-action="Index" class="dash-nav-item"><div class="dash-dot"></div>Dashboard</a>
-        <a asp-action="Saloane" class="dash-nav-item"><div class="dash-dot"></div>Salonul meu</a>
-        <a asp-action="Notificari" class="dash-nav-item active"><div class="dash-dot" style="background:#1D9E75"></div>Notificări</a>
+<div class="page-body">
+    <div class="page-header">
+        <h2>Notificări</h2>
+        <p>@Model.Count(n => !n.EsteCitita) necitite din @Model.Count total</p>
     </div>
 
-    <div class="dash-content">
-        <div class="page-header">
-            <h2>Notificări</h2>
-            <p>@Model.Count(n => !n.EsteCitita) necitite din @Model.Count total</p>
-        </div>
+    @if (!Model.Any())
+    {
+        <p style="color:#9b9b9b;font-size:13px">Nu ai nicio notificare.</p>
+    }
 
-        @if (!Model.Any())
-        {
-            <p style="color:#9b9b9b;font-size:13px">Nu ai nicio notificare.</p>
-        }
-
-        @foreach (var n in Model)
-        {
-            <div style="display:flex;gap:12px;padding:14px 0;border-bottom:0.5px solid #f0f0f0;@(!n.EsteCitita ? "background:#fafaf9;" : "")">
-                <div style="width:8px;height:8px;border-radius:50%;background:@(!n.EsteCitita ? "#1D9E75" : "#e5e5e5");margin-top:5px;flex-shrink:0"></div>
-                <div style="flex:1">
-                    <div style="font-size:13px;font-weight:@(!n.EsteCitita ? "500" : "400");color:#1a1a1a">@n.Mesaj</div>
-                    <div style="font-size:11px;color:#9b9b9b;margin-top:4px">@n.DataCreare.ToString("dd MMM yyyy · HH:mm")</div>
-                </div>
+    @foreach (var n in Model)
+    {
+        <div style="display:flex;gap:12px;padding:14px 0;border-bottom:0.5px solid #f0f0f0">
+            <div style="width:8px;height:8px;border-radius:50%;background:@(!n.EsteCitita ? "#1D9E75" : "#e5e5e5");margin-top:5px;flex-shrink:0"></div>
+            <div style="flex:1">
+                <div style="font-size:13px;font-weight:@(!n.EsteCitita ? "500" : "400");color:#1a1a1a">@n.Mesaj</div>
+                <div style="font-size:11px;color:#9b9b9b;margin-top:4px">@n.DataCreare.ToString("dd MMM yyyy · HH:mm")</div>
             </div>
-        }
-    </div>
+        </div>
+    }
 </div>

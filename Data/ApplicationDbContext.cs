@@ -16,6 +16,7 @@ namespace SalonBook.Data
         public DbSet<Notificare> Notificari { get; set; }
         public DbSet<ClientBlocat> ClientiBlocati { get; set; }
         public DbSet<Recenzie> Recenzii { get; set; }
+        public DbSet<PerioadaBlocata> PerioadeBlockate { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -68,6 +69,13 @@ namespace SalonBook.Data
                 .WithMany()
                 .HasForeignKey(r => r.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ADAUGAT — PerioadaBlocata
+            builder.Entity<PerioadaBlocata>()
+                .HasOne(p => p.Salon)
+                .WithMany()
+                .HasForeignKey(p => p.SalonId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

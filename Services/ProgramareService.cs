@@ -37,15 +37,30 @@ namespace SalonBook.Services
 
         public async Task<List<DateTime>> GetOreDisponibileAsync(int serviciuId, DateTime data)
         {
-            var serviciu = await _context.Servicii.FindAsync(serviciuId);
+            var serviciu = await _context.Servicii
+                .Include(s => s.Salon)
+                .FirstOrDefaultAsync(s => s.Id == serviciuId);
+
             if (serviciu == null) return new List<DateTime>();
 
+            // Verifica daca ziua e blocata de detinator
+            var esteZiBlocata = await _context.PerioadeBlockate
+                .AnyAsync(pb => pb.SalonId == serviciu.SalonId
+                             && data.Date >= pb.DataStart.Date
+                             && data.Date <= pb.DataSfarsit.Date);
+
+            if (esteZiBlocata) return new List<DateTime>();
+
             var oreDisponibile = new List<DateTime>();
-            var start = data.Date.AddHours(9);
-            var sfarsit = data.Date.AddHours(18);
+
+            var oraStart = serviciu.Salon?.OraDeschierii ?? new TimeSpan(9, 0, 0);
+            var oraFinal = serviciu.Salon?.OraInchiderii ?? new TimeSpan(18, 0, 0);
+
+            var start = data.Date + oraStart;
+            var sfarsit = data.Date + oraFinal;
 
             var programariExistente = await _context.Programari
-                .Where(p => p.ServiciuId == serviciuId
+                .Where(p => p.Serviciu!.SalonId == serviciu.SalonId
                     && p.DataOra.Date == data.Date
                     && p.Status != StatusProgramare.Respinsa
                     && p.Status != StatusProgramare.Anulata)
@@ -57,7 +72,8 @@ namespace SalonBook.Services
                 if (ora < DateTime.Now) continue;
 
                 bool ocupat = programariExistente.Any(p =>
-                    ora < p.AddMinutes(serviciu.DurataMinte) && ora.AddMinutes(serviciu.DurataMinte) > p);
+                    ora < p.AddMinutes(serviciu.DurataMinte) &&
+                    ora.AddMinutes(serviciu.DurataMinte) > p);
 
                 if (!ocupat)
                     oreDisponibile.Add(ora);
@@ -71,6 +87,24 @@ namespace SalonBook.Services
             if (dataOra < DateTime.Now)
                 throw new InvalidOperationException("Nu poți face o programare în trecut.");
 
+            // Verifica daca ziua e blocata
+            var serviciu = await _context.Servicii
+                .Include(s => s.Salon)
+                    .ThenInclude(s => s!.Detinator)
+                .FirstOrDefaultAsync(s => s.Id == serviciuId);
+
+            if (serviciu != null)
+            {
+                var esteZiBlocata = await _context.PerioadeBlockate
+                    .AnyAsync(pb => pb.SalonId == serviciu.SalonId
+                                 && dataOra.Date >= pb.DataStart.Date
+                                 && dataOra.Date <= pb.DataSfarsit.Date);
+
+                if (esteZiBlocata)
+                    throw new InvalidOperationException(
+                        "Salonul este indisponibil în această perioadă.");
+            }
+
             var programare = new Programare
             {
                 ClientId = clientId,
@@ -83,11 +117,6 @@ namespace SalonBook.Services
             _context.Programari.Add(programare);
             await _context.SaveChangesAsync();
 
-            var serviciu = await _context.Servicii
-                .Include(s => s.Salon)
-                    .ThenInclude(s => s!.Detinator)
-                .FirstOrDefaultAsync(s => s.Id == serviciuId);
-
             if (serviciu?.Salon?.Detinator != null)
             {
                 await _notificareService.TrimiteNotificareAsync(
@@ -99,7 +128,8 @@ namespace SalonBook.Services
             return programare;
         }
 
-        public async Task<bool> ActualizeazaStatusAsync(int programareId, StatusProgramare status, string detinatorId)
+        public async Task<bool> ActualizeazaStatusAsync(
+            int programareId, StatusProgramare status, string detinatorId)
         {
             var programare = await _context.Programari
                 .Include(p => p.Serviciu)
@@ -115,11 +145,21 @@ namespace SalonBook.Services
             programare.Status = status;
             await _context.SaveChangesAsync();
 
-            string mesaj = status == StatusProgramare.Acceptata
-                ? $"Programarea ta din {programare.DataOra:dd MMM yyyy HH:mm} a fost acceptata!"
-                : $"Programarea ta din {programare.DataOra:dd MMM yyyy HH:mm} a fost respinsa.";
+            // Trimite notificare clientului doar pentru Acceptata/Respinsa/Onorata
+            string? mesaj = status switch
+            {
+                StatusProgramare.Acceptata =>
+                    $"Programarea ta din {programare.DataOra:dd MMM yyyy HH:mm} a fost acceptata!",
+                StatusProgramare.Respinsa =>
+                    $"Programarea ta din {programare.DataOra:dd MMM yyyy HH:mm} a fost respinsa.",
+                StatusProgramare.Onorata =>
+                    $"Programarea ta din {programare.DataOra:dd MMM yyyy HH:mm} a fost marcata ca onorata. Multumim!",
+                _ => null
+            };
 
-            await _notificareService.TrimiteNotificareAsync(programare.ClientId, programareId, mesaj);
+            if (mesaj != null)
+                await _notificareService.TrimiteNotificareAsync(
+                    programare.ClientId, programareId, mesaj);
 
             return true;
         }

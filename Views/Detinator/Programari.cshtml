@@ -17,14 +17,17 @@
     <!-- Filtre status -->
     <div style="display:flex;gap:8px;margin-bottom:16px">
         <span style="font-size:12px;color:#6b6b6b;align-self:center">Filtrează:</span>
-        <span class="badge badge-amber" style="cursor:pointer">
+        <span class="badge badge-amber">
             În așteptare (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.InAsteptare))
         </span>
-        <span class="badge badge-green" style="cursor:pointer">
+        <span class="badge badge-green">
             Acceptate (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Acceptata))
         </span>
-        <span class="badge badge-red" style="cursor:pointer">
+        <span class="badge badge-red">
             Respinse (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Respinsa))
+        </span>
+        <span class="badge" style="background:#EAF3DE;color:#3B6D11">
+            Onorate (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Onorata))
         </span>
     </div>
 
@@ -64,6 +67,9 @@
                                 case SalonBook.Models.StatusProgramare.Acceptata:
                                     <span class="badge badge-green">Acceptată</span>
                                     break;
+                                case SalonBook.Models.StatusProgramare.Onorata:
+                                    <span class="badge" style="background:#EAF3DE;color:#3B6D11">✓ Onorată</span>
+                                    break;
                                 case SalonBook.Models.StatusProgramare.Respinsa:
                                     <span class="badge badge-red">Respinsă</span>
                                     break;
@@ -74,6 +80,7 @@
                         </td>
                         <td>
                             <div style="display:flex;gap:4px;flex-wrap:wrap">
+
                                 @if (p.Status == SalonBook.Models.StatusProgramare.InAsteptare)
                                 {
                                     <form asp-action="ActualizeazaStatus" method="post" style="display:inline">
@@ -89,6 +96,19 @@
                                         <input type="hidden" name="salonId" value="@salon?.Id" />
                                         <input type="hidden" name="status" value="Respinsa" />
                                         <button type="submit" class="badge badge-red" style="border:none;cursor:pointer;padding:4px 10px">Respinge</button>
+                                    </form>
+                                }
+
+                                @if (p.Status == SalonBook.Models.StatusProgramare.Acceptata)
+                                {
+                                    <form asp-action="MarcheazaOnorata" method="post" style="display:inline"
+                                          onsubmit="return confirm('Marchezi programarea ca onorată?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="programareId" value="@p.Id" />
+                                        <input type="hidden" name="salonId" value="@salon?.Id" />
+                                        <button type="submit" style="background:#EAF3DE;color:#3B6D11;border:none;cursor:pointer;padding:4px 10px;border-radius:4px;font-size:11px">
+                                            ✓ Onorat
+                                        </button>
                                     </form>
                                 }
 

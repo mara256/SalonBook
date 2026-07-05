@@ -30,6 +30,14 @@ namespace SalonBook.Controllers
             _userManager = userManager;
         }
 
+        private async Task SetPrimulSalonIdAsync(string userId)
+        {
+            var detinator = await _context.Detinatori
+                .Include(d => d.Saloane)
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+            ViewBag.PrimulSalonId = detinator?.Saloane.FirstOrDefault()?.Id;
+        }
+
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User)!;
@@ -43,14 +51,21 @@ namespace SalonBook.Controllers
             foreach (var salon in detinator.Saloane)
             {
                 var prog = await _programareService.GetProgramariSalonAsync(salon.Id);
-                programariAzi.AddRange(prog.Where(p => p.DataOra.Date == DateTime.Today));
+                programariAzi.AddRange(prog);
             }
 
             ViewBag.Detinator = detinator;
-            ViewBag.ProgramariAsteptare = programariAzi.Count(p => p.Status == StatusProgramare.InAsteptare);
-            ViewBag.ProgramariAzi = programariAzi.Count;
+            ViewBag.ProgramariAsteptare = programariAzi
+                .Count(p => p.Status == StatusProgramare.InAsteptare);
+            ViewBag.ProgramariAzi = programariAzi
+                .Count(p => p.DataOra.Date == DateTime.Today);
+            ViewBag.TotalAfisate = programariAzi.Count;
+            ViewBag.PrimulSalonId = detinator.Saloane.FirstOrDefault()?.Id;
 
-            return View(programariAzi.OrderBy(p => p.DataOra).ToList());
+            return View(programariAzi
+                .Where(p => p.Status == StatusProgramare.InAsteptare)
+                .OrderBy(p => p.DataOra)
+                .ToList());
         }
 
         public async Task<IActionResult> Saloane()
@@ -61,11 +76,18 @@ namespace SalonBook.Controllers
                 .FirstOrDefaultAsync(d => d.UserId == userId);
 
             if (detinator == null) return RedirectToAction("Inregistrare");
+
+            ViewBag.PrimulSalonId = detinator.Saloane.FirstOrDefault()?.Id;
             return View(detinator.Saloane.ToList());
         }
 
         [HttpGet]
-        public IActionResult AdaugaSalon() => View();
+        public async Task<IActionResult> AdaugaSalon()
+        {
+            var userId = _userManager.GetUserId(User)!;
+            await SetPrimulSalonIdAsync(userId);
+            return View();
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -75,7 +97,11 @@ namespace SalonBook.Controllers
             var detinator = await _context.Detinatori.FirstOrDefaultAsync(d => d.UserId == userId);
             if (detinator == null) return RedirectToAction("Inregistrare");
 
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+            {
+                await SetPrimulSalonIdAsync(userId);
+                return View(model);
+            }
 
             if (poza != null && poza.Length > 0)
             {
@@ -104,6 +130,8 @@ namespace SalonBook.Controllers
                 .FirstOrDefaultAsync(s => s.Id == id && s.Detinator!.UserId == userId);
 
             if (salon == null) return Forbid();
+
+            await SetPrimulSalonIdAsync(userId);
             return View(salon);
         }
 
@@ -152,6 +180,8 @@ namespace SalonBook.Controllers
                 .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
 
             if (salon == null) return Forbid();
+
+            await SetPrimulSalonIdAsync(userId);
             return View(salon);
         }
 
@@ -194,6 +224,7 @@ namespace SalonBook.Controllers
 
             ViewBag.Salon = salon;
             ViewBag.ClientiBlocati = clientiBlocati;
+            await SetPrimulSalonIdAsync(userId);
             return View(programari);
         }
 
@@ -202,7 +233,13 @@ namespace SalonBook.Controllers
         public async Task<IActionResult> ActualizeazaStatus(int programareId, string status, int salonId)
         {
             var userId = _userManager.GetUserId(User)!;
-            var statusEnum = status == "Acceptata" ? StatusProgramare.Acceptata : StatusProgramare.Respinsa;
+            var statusEnum = status switch
+            {
+                "Acceptata" => StatusProgramare.Acceptata,
+                "Respinsa"  => StatusProgramare.Respinsa,
+                "Onorata"   => StatusProgramare.Onorata,
+                _           => StatusProgramare.Respinsa
+            };
             await _programareService.ActualizeazaStatusAsync(programareId, statusEnum, userId);
             return RedirectToAction("Programari", new { salonId });
         }
@@ -212,7 +249,6 @@ namespace SalonBook.Controllers
         public async Task<IActionResult> BlocheazaClient(string clientId, int salonId, string? motiv)
         {
             var userId = _userManager.GetUserId(User)!;
-
             var salon = await _context.Saloane
                 .Include(s => s.Detinator)
                 .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
@@ -263,6 +299,7 @@ namespace SalonBook.Controllers
         {
             var userId = _userManager.GetUserId(User)!;
             var notificari = await _notificareService.GetNotificariAsync(userId);
+            await SetPrimulSalonIdAsync(userId);
             return View(notificari);
         }
 
@@ -301,10 +338,8 @@ namespace SalonBook.Controllers
             ViewBag.Anulate = await _context.Programari
                 .CountAsync(p => salonIds.Contains(p.Serviciu!.SalonId)
                             && p.Status == StatusProgramare.Anulata);
-
             ViewBag.TotalProgramari = await _context.Programari
                 .CountAsync(p => salonIds.Contains(p.Serviciu!.SalonId));
-
             ViewBag.TotalClienti = await _context.Programari
                 .Where(p => salonIds.Contains(p.Serviciu!.SalonId))
                 .Select(p => p.ClientId)
@@ -313,10 +348,7 @@ namespace SalonBook.Controllers
 
             var topServicii = await _context.Servicii
                 .Where(sv => salonIds.Contains(sv.SalonId))
-                .Select(sv => new {
-                    sv.Nume,
-                    Count = sv.Programari.Count
-                })
+                .Select(sv => new { sv.Nume, Count = sv.Programari.Count })
                 .OrderByDescending(sv => sv.Count)
                 .Take(5)
                 .ToListAsync();
@@ -324,11 +356,289 @@ namespace SalonBook.Controllers
             ViewBag.ProgramariPeLuna = programariPeLuna;
             ViewBag.TopServicii = topServicii;
             ViewBag.Detinator = detinator;
+            ViewBag.PrimulSalonId = detinator.Saloane.FirstOrDefault()?.Id;
 
             return View();
         }
-        
-        public async Task<IActionResult> ExportPDF(int salonId)
+
+        // PDF Tabelar — cu filtre perioada
+public async Task<IActionResult> ExportPDFTabelar(int salonId, string perioada = "luna")
+{
+    var userId = _userManager.GetUserId(User)!;
+    var salon = await _context.Saloane
+        .Include(s => s.Detinator)
+        .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
+
+    if (salon == null) return Forbid();
+
+    var acum = DateTime.Now;
+    DateTime dataStart = perioada switch
+    {
+        "saptamana" => acum.AddDays(-7),
+        "luna"      => new DateTime(acum.Year, acum.Month, 1),
+        "an"        => new DateTime(acum.Year, 1, 1),
+        _           => DateTime.MinValue // "toate"
+    };
+
+    var titluPerioada = perioada switch
+    {
+        "saptamana" => "Ultimele 7 zile",
+        "luna"      => $"{acum:MMMM yyyy}",
+        "an"        => $"Anul {acum.Year}",
+        _           => "Toate programările"
+    };
+
+    var programari = await _context.Programari
+        .Include(p => p.Client)
+        .Include(p => p.Serviciu)
+        .Where(p => p.Serviciu!.SalonId == salonId
+                 && p.DataOra >= dataStart)
+        .OrderByDescending(p => p.DataOra)
+        .ToListAsync();
+
+    QuestPDF.Settings.License = LicenseType.Community;
+
+    var pdf = Document.Create(container =>
+    {
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(30);
+            page.DefaultTextStyle(x => x.FontSize(10));
+
+            page.Header().Column(col =>
+            {
+                col.Item().Text($"SalonBook — Raport {salon.Nume}").FontSize(18).Bold();
+                col.Item().Text($"Perioada: {titluPerioada}").FontSize(11).FontColor("#3C3489");
+                col.Item().Text($"Generat: {DateTime.Now:dd MMM yyyy HH:mm}").FontSize(10).FontColor("#6b6b6b");
+                col.Item().PaddingTop(8).LineHorizontal(0.5f);
+            });
+
+            page.Content().PaddingTop(16).Table(table =>
+            {
+                table.ColumnsDefinition(cols =>
+                {
+                    cols.RelativeColumn(2);
+                    cols.RelativeColumn(2);
+                    cols.RelativeColumn(1);
+                    cols.RelativeColumn(1);
+                    cols.RelativeColumn(1);
+                });
+
+                table.Header(header =>
+                {
+                    foreach (var titlu in new[] { "Client", "Serviciu", "Data", "Preț", "Status" })
+                        header.Cell().Background("#E1F5EE").Padding(6).Text(titlu).Bold().FontSize(9);
+                });
+
+                if (!programari.Any())
+                {
+                    table.Cell().ColumnSpan(5).Padding(20).AlignCenter()
+                        .Text("Nu există programări în perioada selectată.").FontColor("#9b9b9b");
+                }
+
+                foreach (var p in programari)
+                {
+                    var culoare = p.Status switch
+                    {
+                        StatusProgramare.Acceptata => "#E1F5EE",
+                        StatusProgramare.Onorata   => "#EAF3DE",
+                        StatusProgramare.Respinsa  => "#FCEBEB",
+                        StatusProgramare.Anulata   => "#FCEBEB",
+                        _                          => "#FAEEDA"
+                    };
+                    var statusText = p.Status switch
+                    {
+                        StatusProgramare.InAsteptare => "In asteptare",
+                        StatusProgramare.Acceptata   => "Acceptata",
+                        StatusProgramare.Onorata     => "Onorata",
+                        StatusProgramare.Respinsa    => "Respinsa",
+                        StatusProgramare.Anulata     => "Anulata",
+                        _                            => p.Status.ToString()
+                    };
+
+                    table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
+                        .Text($"{p.Client?.Prenume} {p.Client?.Nume}").FontSize(9);
+                    table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
+                        .Text(p.Serviciu?.Nume ?? "").FontSize(9);
+                    table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
+                        .Text(p.DataOra.ToString("dd MMM yyyy HH:mm")).FontSize(9);
+                    table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
+                        .Text($"{p.Serviciu?.Pret} lei").FontSize(9);
+                    table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Background(culoare).Padding(6)
+                        .Text(statusText).FontSize(9);
+                }
+            });
+
+            page.Footer().AlignCenter().Text(x =>
+            {
+                x.Span("Pagina "); x.CurrentPageNumber(); x.Span(" din "); x.TotalPages();
+            });
+        });
+    });
+
+    return File(pdf.GeneratePdf(), "application/pdf",
+        $"raport-{perioada}-{salon.Nume}-{DateTime.Now:yyyy-MM-dd}.pdf");
+}
+
+// PDF Program pe Zi — doar de azi inainte
+public async Task<IActionResult> ExportPDFZilnic(int salonId)
+{
+    var userId = _userManager.GetUserId(User)!;
+    var salon = await _context.Saloane
+        .Include(s => s.Detinator)
+        .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
+
+    if (salon == null) return Forbid();
+
+    var programari = await _context.Programari
+        .Include(p => p.Client)
+        .Include(p => p.Serviciu)
+        .Where(p => p.Serviciu!.SalonId == salonId
+                 && p.DataOra.Date >= DateTime.Today  // doar de azi inainte
+                 && p.Status != StatusProgramare.Respinsa
+                 && p.Status != StatusProgramare.Anulata)
+        .OrderBy(p => p.DataOra)
+        .ToListAsync();
+
+    var peZile = programari.GroupBy(p => p.DataOra.Date).OrderBy(g => g.Key).ToList();
+
+    QuestPDF.Settings.License = LicenseType.Community;
+
+    var pdf = Document.Create(container =>
+    {
+        container.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(30);
+            page.DefaultTextStyle(x => x.FontSize(10));
+
+            page.Header().Column(col =>
+            {
+                col.Item().Text($"Program zilnic — {salon.Nume}").FontSize(18).Bold();
+                col.Item().Text($"De la: {DateTime.Today:dd MMM yyyy}").FontSize(11).FontColor("#3C3489");
+                col.Item().Text($"Generat: {DateTime.Now:dd MMM yyyy HH:mm}").FontSize(10).FontColor("#6b6b6b");
+                col.Item().PaddingTop(8).LineHorizontal(0.5f);
+            });
+
+            page.Content().PaddingTop(16).Column(col =>
+            {
+                foreach (var zi in peZile)
+                {
+                    col.Item().PaddingTop(12)
+                        .Text(zi.Key.ToString("dddd, dd MMM yyyy"))
+                        .FontSize(13).Bold();
+                    col.Item().PaddingBottom(6).LineHorizontal(0.5f);
+
+                    foreach (var p in zi.OrderBy(p => p.DataOra))
+                    {
+                        var culoare = p.Status switch
+                        {
+                            StatusProgramare.Onorata   => "#EAF3DE",
+                            StatusProgramare.Acceptata => "#E1F5EE",
+                            _                          => "#FAEEDA"
+                        };
+
+                        col.Item().PaddingBottom(4).Row(row =>
+                        {
+                            row.ConstantItem(50).Background(culoare)
+                                .Padding(6).AlignCenter()
+                                .Text(p.DataOra.ToString("HH:mm"))
+                                .FontSize(11).Bold();
+
+                            row.RelativeItem().BorderBottom(0.5f).BorderColor("#e5e5e5")
+                                .Padding(6).Column(c =>
+                                {
+                                    c.Item().Text($"{p.Client?.Prenume} {p.Client?.Nume}")
+                                        .FontSize(11).Bold();
+                                    c.Item().Text($"{p.Serviciu?.Nume} · {p.Serviciu?.DurataMinte} min · {p.Serviciu?.Pret} lei")
+                                        .FontSize(10).FontColor("#6b6b6b");
+                                });
+
+                            row.ConstantItem(70).AlignRight().Padding(6)
+                                .Text(p.Status == StatusProgramare.Onorata ? "✓ Onorat" :
+                                      p.Status == StatusProgramare.Acceptata ? "Acceptat" : "Asteptare")
+                                .FontSize(9).FontColor(
+                                    p.Status == StatusProgramare.Onorata ? "#3B6D11" :
+                                    p.Status == StatusProgramare.Acceptata ? "#0F6E56" : "#633806");
+                        });
+                    }
+
+                    col.Item().PaddingBottom(8)
+                        .Text($"Total zi: {zi.Count()} programări · {zi.Sum(p => p.Serviciu?.DurataMinte ?? 0)} minute")
+                        .FontSize(9).FontColor("#9b9b9b");
+                }
+
+                if (!peZile.Any())
+                    col.Item().PaddingTop(20).AlignCenter()
+                        .Text("Nu există programări viitoare active.").FontColor("#9b9b9b");
+            });
+
+            page.Footer().AlignCenter().Text(x =>
+            {
+                x.Span("Pagina "); x.CurrentPageNumber(); x.Span(" din "); x.TotalPages();
+            });
+        });
+    });
+
+    return File(pdf.GeneratePdf(), "application/pdf",
+        $"program-zilnic-{salon.Nume}-{DateTime.Now:yyyy-MM-dd}.pdf");
+}
+
+        // Marcheaza ca Onorata
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcheazaOnorata(int programareId, int salonId)
+        {
+            var userId = _userManager.GetUserId(User)!;
+            await _programareService.ActualizeazaStatusAsync(
+                programareId, StatusProgramare.Onorata, userId);
+            TempData["Succes"] = "Programarea a fost marcată ca onorată.";
+            return RedirectToAction("Programari", new { salonId });
+        }
+
+        // Adauga perioada blocata
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdaugaPerioadaBlocata(
+            int salonId, DateTime dataStart, DateTime dataSfarsit, string? motiv)
+        {
+            var userId = _userManager.GetUserId(User)!;
+            var salon = await _context.Saloane
+                .Include(s => s.Detinator)
+                .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
+
+            if (salon == null) return Forbid();
+
+            _context.PerioadeBlockate.Add(new PerioadaBlocata
+            {
+                SalonId = salonId,
+                DataStart = dataStart,
+                DataSfarsit = dataSfarsit,
+                Motiv = motiv
+            });
+            await _context.SaveChangesAsync();
+
+            TempData["Succes"] = "Perioada a fost blocată.";
+            return RedirectToAction("Calendar", new { salonId });
+        }
+
+        // Sterge perioada blocata
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StergePerioadaBlocata(int perioadaId, int salonId)
+        {
+            var perioada = await _context.PerioadeBlockate.FindAsync(perioadaId);
+            if (perioada != null)
+            {
+                _context.PerioadeBlockate.Remove(perioada);
+                await _context.SaveChangesAsync();
+            }
+            TempData["Succes"] = "Perioada a fost deblocată.";
+            return RedirectToAction("Calendar", new { salonId });
+        }
+
+        public async Task<IActionResult> Calendar(int salonId)
         {
             var userId = _userManager.GetUserId(User)!;
             var salon = await _context.Saloane
@@ -341,128 +651,38 @@ namespace SalonBook.Controllers
                 .Include(p => p.Client)
                 .Include(p => p.Serviciu)
                 .Where(p => p.Serviciu!.SalonId == salonId)
-                .OrderByDescending(p => p.DataOra)
+                .OrderBy(p => p.DataOra)
                 .ToListAsync();
 
-            QuestPDF.Settings.License = LicenseType.Community;
+            var perioade = await _context.PerioadeBlockate
+                .Where(pb => pb.SalonId == salonId)
+                .ToListAsync();
 
-            var pdf = Document.Create(container =>
-            {
-                container.Page(page =>
+            ViewBag.Salon = salon;
+            ViewBag.PrimulSalonId = salonId;
+            ViewBag.PerioadeBlockateJson = System.Text.Json.JsonSerializer.Serialize(
+                perioade.Select(pb => new
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(30);
-                    page.DefaultTextStyle(x => x.FontSize(10));
+                    id = pb.Id,
+                    dataStart = pb.DataStart.ToString("yyyy-MM-dd"),
+                    dataSfarsit = pb.DataSfarsit.ToString("yyyy-MM-dd"),
+                    motiv = pb.Motiv ?? "Indisponibil"
+                }));
+            ViewBag.ProgramariJson = System.Text.Json.JsonSerializer.Serialize(
+                programari.Select(p => new
+                {
+                    id = p.Id,
+                    titlu = $"{p.Serviciu?.Nume} — {p.Client?.Prenume} {p.Client?.Nume}",
+                    dataOra = p.DataOra.ToString("yyyy-MM-ddTHH:mm"),
+                    durata = p.Serviciu?.DurataMinte ?? 30,
+                    status = p.Status.ToString(),
+                    client = $"{p.Client?.Prenume} {p.Client?.Nume}",
+                    serviciu = p.Serviciu?.Nume,
+                    pret = p.Serviciu?.Pret
+                }));
 
-                    page.Header().Column(col =>
-                    {
-                        col.Item().Text($"SalonBook — Raport {salon.Nume}")
-                            .FontSize(18).Bold();
-                        col.Item().Text($"Generat: {DateTime.Now:dd MMM yyyy HH:mm}")
-                            .FontSize(10).FontColor("#6b6b6b");
-                        col.Item().PaddingTop(8).LineHorizontal(0.5f);
-                    });
-
-                    page.Content().PaddingTop(16).Table(table =>
-                    {
-                        table.ColumnsDefinition(cols =>
-                        {
-                            cols.RelativeColumn(2);
-                            cols.RelativeColumn(2);
-                            cols.RelativeColumn(1);
-                            cols.RelativeColumn(1);
-                            cols.RelativeColumn(1);
-                        });
-
-                        table.Header(header =>
-                        {
-                            foreach (var titlu in new[] { "Client", "Serviciu", "Data", "Preț", "Status" })
-                            {
-                                header.Cell().Background("#E1F5EE").Padding(6)
-                                    .Text(titlu).Bold().FontSize(9);
-                            }
-                        });
-
-                        foreach (var p in programari)
-                        {
-                            var culoare = p.Status switch
-                            {
-                                StatusProgramare.Acceptata => "#E1F5EE",
-                                StatusProgramare.Respinsa => "#FCEBEB",
-                                StatusProgramare.Anulata => "#FCEBEB",
-                                _ => "#FAEEDA"
-                            };
-
-                            var statusText = p.Status switch
-                            {
-                                StatusProgramare.InAsteptare => "In asteptare",
-                                StatusProgramare.Acceptata => "Acceptata",
-                                StatusProgramare.Respinsa => "Respinsa",
-                                StatusProgramare.Anulata => "Anulata",
-                                _ => p.Status.ToString()
-                            };
-
-                            table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
-                                .Text($"{p.Client?.Prenume} {p.Client?.Nume}").FontSize(9);
-                            table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
-                                .Text(p.Serviciu?.Nume ?? "").FontSize(9);
-                            table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
-                                .Text(p.DataOra.ToString("dd MMM yyyy HH:mm")).FontSize(9);
-                            table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Padding(6)
-                                .Text($"{p.Serviciu?.Pret} lei").FontSize(9);
-                            table.Cell().BorderBottom(0.5f).BorderColor("#e5e5e5").Background(culoare).Padding(6)
-                                .Text(statusText).FontSize(9);
-                        }
-                    });
-
-                    page.Footer().AlignCenter()
-                        .Text(x =>
-                        {
-                            x.Span("Pagina ");
-                            x.CurrentPageNumber();
-                            x.Span(" din ");
-                            x.TotalPages();
-                        });
-                });
-            });
-
-            var bytes = pdf.GeneratePdf();
-            return File(bytes, "application/pdf",
-                $"raport-{salon.Nume}-{DateTime.Now:yyyy-MM-dd}.pdf");
+            return View();
         }
-                
-                public async Task<IActionResult> Calendar(int salonId)
-                {
-                    var userId = _userManager.GetUserId(User)!;
-                    var salon = await _context.Saloane
-                        .Include(s => s.Detinator)
-                        .FirstOrDefaultAsync(s => s.Id == salonId && s.Detinator!.UserId == userId);
-
-                    if (salon == null) return Forbid();
-
-                    var programari = await _context.Programari
-                        .Include(p => p.Client)
-                        .Include(p => p.Serviciu)
-                        .Where(p => p.Serviciu!.SalonId == salonId)
-                        .OrderBy(p => p.DataOra)
-                        .ToListAsync();
-
-                    ViewBag.Salon = salon;
-                    ViewBag.ProgramariJson = System.Text.Json.JsonSerializer.Serialize(
-                        programari.Select(p => new
-                        {
-                            id = p.Id,
-                            titlu = $"{p.Serviciu?.Nume} — {p.Client?.Prenume} {p.Client?.Nume}",
-                            dataOra = p.DataOra.ToString("yyyy-MM-ddTHH:mm"),
-                            durata = p.Serviciu?.DurataMinte ?? 30,
-                            status = p.Status.ToString(),
-                            client = $"{p.Client?.Prenume} {p.Client?.Nume}",
-                            serviciu = p.Serviciu?.Nume,
-                            pret = p.Serviciu?.Pret
-                        }));
-
-                    return View();
-                }
 
         [AllowAnonymous]
         [HttpGet]

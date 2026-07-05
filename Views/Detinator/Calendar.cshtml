@@ -1,93 +1,155 @@
 @{ ViewData["Title"] = "Calendar programări"; }
+@{ var salon = ViewBag.Salon as SalonBook.Models.Salon; }
 
-@{
-    var salon = ViewBag.Salon as SalonBook.Models.Salon;
-}
-
-<div class="dashboard-layout">
-    <div class="dash-sidebar">
-        <div class="dash-user">
-            <div class="dash-avatar" style="background:#E1F5EE;color:#0F6E56">DS</div>
-            <div><div class="dash-name">@salon?.Nume</div><div class="dash-role">Deținător</div></div>
+<div class="page-body">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+            <h2>Calendar programări</h2>
+            <p>@salon?.Nume</p>
         </div>
-        <a asp-action="Index" class="dash-nav-item"><div class="dash-dot"></div>Dashboard</a>
-        <a asp-action="Saloane" class="dash-nav-item"><div class="dash-dot"></div>Salonul meu</a>
-        <a asp-action="Notificari" class="dash-nav-item"><div class="dash-dot"></div>Notificări</a>
-        <a asp-action="Statistici" class="dash-nav-item"><div class="dash-dot"></div>Statistici</a>
-        <a asp-action="Calendar" asp-route-salonId="@salon?.Id" class="dash-nav-item active">
-            <div class="dash-dot" style="background:#1D9E75"></div>Calendar
-        </a>
+        <div style="display:flex;gap:8px">
+            <button onclick="schimbaVizualizare('saptamana')" id="btn-saptamana"
+                    class="btn" style="font-size:12px;padding:6px 14px">Săptămână</button>
+            <button onclick="schimbaVizualizare('luna')" id="btn-luna"
+                    class="btn btn-primary" style="font-size:12px;padding:6px 14px">Lună</button>
+        </div>
     </div>
 
-    <div class="dash-content">
-        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div>
-                <h2>Calendar programări</h2>
-                <p>@salon?.Nume</p>
-            </div>
-            <div style="display:flex;gap:8px">
-                <button onclick="schimbaVizualizare('saptamana')" id="btn-saptamana"
-                        class="btn" style="font-size:12px;padding:6px 14px">Săptămână</button>
-                <button onclick="schimbaVizualizare('luna')" id="btn-luna"
-                        class="btn btn-primary" style="font-size:12px;padding:6px 14px">Lună</button>
-            </div>
-        </div>
+    <!-- Navigare -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button onclick="navigheaza(-1)" class="btn" style="padding:6px 12px;font-size:18px">‹</button>
+        <div id="titlu-calendar" style="font-size:15px;font-weight:500;min-width:200px;text-align:center"></div>
+        <button onclick="navigheaza(1)" class="btn" style="padding:6px 12px;font-size:18px">›</button>
+        <button onclick="azi()" class="btn" style="font-size:12px;padding:6px 12px">Azi</button>
+    </div>
 
-        <!-- Navigare luna/saptamana -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-            <button onclick="navigheaza(-1)" class="btn" style="padding:6px 12px;font-size:18px">‹</button>
-            <div id="titlu-calendar" style="font-size:15px;font-weight:500;min-width:200px;text-align:center"></div>
-            <button onclick="navigheaza(1)" class="btn" style="padding:6px 12px;font-size:18px">›</button>
-            <button onclick="azi()" class="btn" style="font-size:12px;padding:6px 12px">Azi</button>
+    <!-- Legenda -->
+    <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
+            <div style="width:10px;height:10px;border-radius:2px;background:#FAEEDA"></div> În așteptare
         </div>
-
-        <!-- Legenda statusuri -->
-        <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
-                <div style="width:10px;height:10px;border-radius:2px;background:#FAEEDA"></div> În așteptare
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
-                <div style="width:10px;height:10px;border-radius:2px;background:#E1F5EE"></div> Acceptată
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
-                <div style="width:10px;height:10px;border-radius:2px;background:#FCEBEB"></div> Respinsă/Anulată
-            </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
+            <div style="width:10px;height:10px;border-radius:2px;background:#E1F5EE"></div> Acceptată
         </div>
-
-        <!-- Calendar luna -->
-        <div id="view-luna" style="border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden">
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f5f5f4">
-                @foreach (var zi in new[] { "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum" })
-                {
-                    <div style="padding:8px;text-align:center;font-size:12px;font-weight:500;color:#6b6b6b;border-right:0.5px solid #e5e5e5">@zi</div>
-                }
-            </div>
-            <div id="grid-luna" style="display:grid;grid-template-columns:repeat(7,1fr)"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
+            <div style="width:10px;height:10px;border-radius:2px;background:#EAF3DE"></div> Onorată
         </div>
-
-        <!-- Calendar saptamana -->
-        <div id="view-saptamana" style="display:none;border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden">
-            <div id="header-saptamana" style="display:grid;grid-template-columns:60px repeat(7,1fr);background:#f5f5f4"></div>
-            <div id="grid-saptamana" style="display:grid;grid-template-columns:60px repeat(7,1fr);max-height:600px;overflow-y:auto"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
+            <div style="width:10px;height:10px;border-radius:2px;background:#FCEBEB"></div> Respinsă/Anulată
         </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b6b6b">
+            <div style="width:10px;height:10px;border-radius:2px;background:#F0EEFF;border:1px dashed #9b89f5"></div> Perioadă blocată
+        </div>
+    </div>
 
-        <!-- Modal detalii programare -->
-        <div id="modal-prog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center">
-            <div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:90%;position:relative">
-                <button onclick="inchideModal()" style="position:absolute;top:12px;right:12px;border:none;background:none;font-size:20px;cursor:pointer;color:#6b6b6b">×</button>
-                <div id="modal-continut"></div>
+    <!-- Calendar luna -->
+    <div id="view-luna" style="border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden;margin-bottom:24px">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f5f5f4">
+            @foreach (var zi in new[] { "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum" })
+            {
+                <div style="padding:8px;text-align:center;font-size:12px;font-weight:500;color:#6b6b6b;border-right:0.5px solid #e5e5e5">@zi</div>
+            }
+        </div>
+        <div id="grid-luna" style="display:grid;grid-template-columns:repeat(7,1fr)"></div>
+    </div>
+
+    <!-- Calendar saptamana -->
+    <div id="view-saptamana" style="display:none;border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden;margin-bottom:24px">
+        <div id="header-saptamana" style="display:grid;grid-template-columns:60px repeat(7,1fr);background:#f5f5f4"></div>
+        <div id="grid-saptamana" style="display:grid;grid-template-columns:60px repeat(7,1fr);max-height:600px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Formular blocare perioada -->
+    <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:20px;margin-bottom:24px">
+        <div style="font-size:14px;font-weight:500;margin-bottom:16px"> Blochează o perioadă</div>
+        <form asp-action="AdaugaPerioadaBlocata" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="salonId" value="@salon?.Id" />
+            <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:12px;align-items:end">
+                <div>
+                    <label style="font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px">Data start</label>
+                    <input type="date" name="dataStart" required
+                           style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px" />
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px">Data sfârșit</label>
+                    <input type="date" name="dataSfarsit" required
+                           style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px" />
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px">Motiv (opțional)</label>
+                    <input type="text" name="motiv" placeholder="ex: Concediu, Sărbătoare..."
+                           style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px" />
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding:8px 16px;white-space:nowrap">
+                    Blochează
+                </button>
             </div>
+        </form>
+    </div>
+
+    <!-- Lista perioade blocate -->
+    @{
+        var perioadeJson = ViewBag.PerioadeBlockateJson as string;
+    }
+    @if (!string.IsNullOrEmpty(perioadeJson) && perioadeJson != "[]")
+    {
+        <div style="border:0.5px solid #e5e5e5;border-radius:12px;overflow:hidden;margin-bottom:24px">
+            <div style="padding:12px 16px;background:#f5f5f4;font-size:13px;font-weight:500">Perioade blocate</div>
+            <div id="lista-perioade"></div>
+        </div>
+    }
+
+    <!-- Modal detalii programare -->
+    <div id="modal-prog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:24px;max-width:380px;width:90%;position:relative">
+            <button onclick="inchideModal()" style="position:absolute;top:12px;right:12px;border:none;background:none;font-size:20px;cursor:pointer;color:#6b6b6b">×</button>
+            <div id="modal-continut"></div>
         </div>
     </div>
 </div>
 
+@section Scripts {
 <script>
-    const programari = @Html.Raw(ViewBag.ProgramariJson);
+    const programari = @Html.Raw(ViewBag.ProgramariJson ?? "[]");
+    const perioade = @Html.Raw(ViewBag.PerioadeBlockateJson ?? "[]");
+    const salonId = @(salon?.Id ?? 0);
     let dataActuala = new Date();
     let vizualizare = 'luna';
 
+    // Afiseaza lista perioade blocate
+    const listaPer = document.getElementById('lista-perioade');
+    if (listaPer && perioade.length > 0) {
+        perioade.forEach(pb => {
+            listaPer.innerHTML += `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:0.5px solid #f0f0f0">
+                    <div>
+                        <span style="font-size:13px;font-weight:500">${pb.motiv}</span>
+                        <span style="font-size:12px;color:#6b6b6b;margin-left:12px">${pb.dataStart} → ${pb.dataSfarsit}</span>
+                    </div>
+                    <form action="/Detinator/StergePerioadaBlocata" method="post" style="display:inline"
+                          onsubmit="return confirm('Ștergi această perioadă blocată?')">
+                        <input type="hidden" name="__RequestVerificationToken" value="${document.querySelector('input[name=__RequestVerificationToken]')?.value}" />
+                        <input type="hidden" name="perioadaId" value="${pb.id}" />
+                        <input type="hidden" name="salonId" value="${salonId}" />
+                        <button type="submit" style="background:none;border:none;color:#A32D2D;font-size:12px;cursor:pointer">✕ Șterge</button>
+                    </form>
+                </div>`;
+        });
+    }
+
+    function esteZiBlocata(data) {
+        return perioade.some(pb => {
+            const start = new Date(pb.dataStart);
+            const sfarsit = new Date(pb.dataSfarsit);
+            sfarsit.setHours(23, 59, 59);
+            return data >= start && data <= sfarsit;
+        });
+    }
+
     function culoareStatus(status) {
         if (status === 'Acceptata') return { bg: '#E1F5EE', text: '#0F6E56', border: '#9FE1CB' };
+        if (status === 'Onorata')   return { bg: '#EAF3DE', text: '#3B6D11', border: '#B7DFA0' };
         if (status === 'InAsteptare') return { bg: '#FAEEDA', text: '#633806', border: '#FAC775' };
         return { bg: '#FCEBEB', text: '#A32D2D', border: '#F7C1C1' };
     }
@@ -107,15 +169,8 @@
         randeaza();
     }
 
-    function azi() {
-        dataActuala = new Date();
-        randeaza();
-    }
-
-    function randeaza() {
-        if (vizualizare === 'luna') randeazaLuna();
-        else randeazaSaptamana();
-    }
+    function azi() { dataActuala = new Date(); randeaza(); }
+    function randeaza() { if (vizualizare === 'luna') randeazaLuna(); else randeazaSaptamana(); }
 
     function randeazaLuna() {
         const an = dataActuala.getFullYear();
@@ -138,6 +193,8 @@
         for (let zi = 1; zi <= ultimaZi.getDate(); zi++) {
             const dataZi = new Date(an, luna, zi);
             const esteAzi = dataZi.toDateString() === new Date().toDateString();
+            const blocata = esteZiBlocata(dataZi);
+
             const progZi = programari.filter(p => {
                 const d = new Date(p.dataOra);
                 return d.getFullYear() === an && d.getMonth() === luna && d.getDate() === zi;
@@ -145,17 +202,20 @@
 
             let continut = `<div style="font-size:12px;font-weight:${esteAzi ? '600' : '400'};color:${esteAzi ? '#3C3489' : '#1a1a1a'};margin-bottom:4px;${esteAzi ? 'background:#EEEDFE;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;' : ''}">${zi}</div>`;
 
-            progZi.slice(0, 3).forEach(p => {
-                const c = culoareStatus(p.status);
-                const ora = new Date(p.dataOra).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
-                continut += `<div onclick="deschideModal(${p.id})" style="font-size:10px;padding:2px 4px;border-radius:4px;background:${c.bg};color:${c.text};border:0.5px solid ${c.border};cursor:pointer;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${ora} ${p.serviciu}</div>`;
-            });
-
-            if (progZi.length > 3) {
-                continut += `<div style="font-size:10px;color:#9b9b9b">+${progZi.length - 3} mai mult</div>`;
+            if (blocata) {
+                continut += `<div style="font-size:10px;padding:2px 4px;border-radius:4px;background:#F0EEFF;color:#6b5fc7;border:0.5px dashed #9b89f5">Blocat</div>`;
+            } else {
+                progZi.slice(0, 3).forEach(p => {
+                    const c = culoareStatus(p.status);
+                    const ora = new Date(p.dataOra).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+                    continut += `<div onclick="deschideModal(${p.id})" style="font-size:10px;padding:2px 4px;border-radius:4px;background:${c.bg};color:${c.text};border:0.5px solid ${c.border};cursor:pointer;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${ora} ${p.serviciu}</div>`;
+                });
+                if (progZi.length > 3) {
+                    continut += `<div style="font-size:10px;color:#9b9b9b">+${progZi.length - 3} mai mult</div>`;
+                }
             }
 
-            grid.innerHTML += `<div style="min-height:90px;border-right:0.5px solid #e5e5e5;border-bottom:0.5px solid #e5e5e5;padding:6px;${esteAzi ? 'background:#FAFAFF;' : ''}">${continut}</div>`;
+            grid.innerHTML += `<div style="min-height:90px;border-right:0.5px solid #e5e5e5;border-bottom:0.5px solid #e5e5e5;padding:6px;${esteAzi ? 'background:#FAFAFF;' : ''}${blocata ? 'background:#F8F7FF;' : ''}">${continut}</div>`;
         }
     }
 
@@ -177,7 +237,8 @@
             const d = new Date(startSapt);
             d.setDate(d.getDate() + i);
             const esteAzi = d.toDateString() === new Date().toDateString();
-            header.innerHTML += `<div style="padding:8px;text-align:center;font-size:12px;font-weight:500;color:${esteAzi ? '#3C3489' : '#6b6b6b'};border-right:0.5px solid #e5e5e5;background:${esteAzi ? '#EEEDFE' : 'transparent'}">${zileRo[i]}<br><span style="font-size:14px;font-weight:${esteAzi ? '600' : '400'}">${d.getDate()}</span></div>`;
+            const blocata = esteZiBlocata(d);
+            header.innerHTML += `<div style="padding:8px;text-align:center;font-size:12px;font-weight:500;color:${esteAzi ? '#3C3489' : '#6b6b6b'};border-right:0.5px solid #e5e5e5;background:${blocata ? '#F0EEFF' : esteAzi ? '#EEEDFE' : 'transparent'}">${zileRo[i]}${blocata ? ' ' : ''}<br><span style="font-size:14px;font-weight:${esteAzi ? '600' : '400'}">${d.getDate()}</span></div>`;
         }
 
         const grid = document.getElementById('grid-saptamana');
@@ -188,11 +249,15 @@
             for (let zi = 0; zi < 7; zi++) {
                 const d = new Date(startSapt);
                 d.setDate(d.getDate() + zi);
+                const blocata = esteZiBlocata(d);
                 const progOra = programari.filter(p => {
                     const dp = new Date(p.dataOra);
                     return dp.toDateString() === d.toDateString() && dp.getHours() === ora;
                 });
-                let celula = `<div style="min-height:48px;border-right:0.5px solid #e5e5e5;border-bottom:0.5px solid #f0f0f0;padding:2px;position:relative">`;
+                let celula = `<div style="min-height:48px;border-right:0.5px solid #e5e5e5;border-bottom:0.5px solid #f0f0f0;padding:2px;${blocata ? 'background:#F8F7FF;' : ''}">`;
+                if (blocata && progOra.length === 0) {
+                    if (ora === 8) celula += `<div style="font-size:9px;color:#9b89f5;padding:2px"></div>`;
+                }
                 progOra.forEach(p => {
                     const c = culoareStatus(p.status);
                     celula += `<div onclick="deschideModal(${p.id})" style="font-size:10px;padding:2px 4px;border-radius:4px;background:${c.bg};color:${c.text};border:0.5px solid ${c.border};cursor:pointer;margin-bottom:2px">${p.serviciu}</div>`;
@@ -208,7 +273,7 @@
         if (!p) return;
         const c = culoareStatus(p.status);
         const data = new Date(p.dataOra);
-        const statusRo = { 'Acceptata': 'Acceptată', 'InAsteptare': 'În așteptare', 'Respinsa': 'Respinsă', 'Anulata': 'Anulată' };
+        const statusRo = { 'Acceptata': 'Acceptată', 'InAsteptare': 'În așteptare', 'Respinsa': 'Respinsă', 'Anulata': 'Anulată', 'Onorata': '✓ Onorată' };
 
         document.getElementById('modal-continut').innerHTML = `
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -239,8 +304,7 @@
                     <span style="color:#6b6b6b">Status</span>
                     <span style="padding:2px 10px;border-radius:20px;background:${c.bg};color:${c.text};font-size:12px">${statusRo[p.status] || p.status}</span>
                 </div>
-            </div>
-        `;
+            </div>`;
         document.getElementById('modal-prog').style.display = 'flex';
     }
 
@@ -254,3 +318,4 @@
 
     randeaza();
 </script>
+}

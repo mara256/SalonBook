@@ -1,82 +1,54 @@
 @model List<SalonBook.Models.Salon>
 @{ ViewData["Title"] = "Salonul meu"; }
 
-<div class="dashboard-layout">
-    <div class="dash-sidebar">
-        <div class="dash-user">
-            <div class="dash-avatar" style="background:#E1F5EE;color:#0F6E56">GS</div>
-            <div><div class="dash-name">Salonul meu</div><div class="dash-role">Deținător</div></div>
+<div class="page-body">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+            <h2>Saloanele mele</h2>
+            <p>Gestionează salonul și serviciile tale</p>
         </div>
-        <a asp-action="Index" class="dash-nav-item"><div class="dash-dot"></div>Dashboard</a>
-        <a asp-action="Saloane" class="dash-nav-item active"><div class="dash-dot" style="background:#1D9E75"></div>Salonul meu</a>
-        <a asp-action="Notificari" class="dash-nav-item"><div class="dash-dot"></div>Notificări</a>
+        <a asp-action="AdaugaSalon" class="btn btn-primary">+ Adaugă salon</a>
     </div>
 
-    <div class="dash-content">
-        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div>
-                <h2>Saloanele mele</h2>
-                <p>Gestionează salonul și serviciile tale</p>
-            </div>
-            <a asp-action="AdaugaSalon" class="btn btn-primary">+ Adaugă salon</a>
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:40px;color:#6b6b6b">
+            <p style="font-size:14px;margin-bottom:12px">Nu ai adăugat niciun salon încă.</p>
+            <a asp-action="AdaugaSalon" class="btn btn-primary">Adaugă primul salon</a>
         </div>
+    }
 
-        @if (!Model.Any())
-        {
-            <div style="text-align:center;padding:40px;color:#6b6b6b">
-                <p style="font-size:14px;margin-bottom:12px">Nu ai adăugat niciun salon încă.</p>
-                <a asp-action="AdaugaSalon" class="btn btn-primary">Adaugă primul salon</a>
+    @foreach (var salon in Model)
+    {
+        <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:18px;margin-bottom:14px;display:flex;gap:16px;align-items:flex-start">
+            <div style="width:72px;height:72px;border-radius:10px;background:#f5f5f4;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9b9b9b">
+                @if (!string.IsNullOrEmpty(salon.PozaUrl))
+                {
+                    <img src="@salon.PozaUrl" alt="@salon.Nume" style="width:100%;height:100%;object-fit:cover" />
+                }
+                else { <span>Fără poză</span> }
             </div>
-        }
-
-        @foreach (var salon in Model)
-        {
-            <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:18px;margin-bottom:14px;display:flex;gap:16px;align-items:flex-start">
-                <div style="width:72px;height:72px;border-radius:10px;background:#f5f5f4;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9b9b9b">
-                    @if (!string.IsNullOrEmpty(salon.PozaUrl))
-                    {
-                        <img src="@salon.PozaUrl" alt="@salon.Nume" style="width:100%;height:100%;object-fit:cover" />
-                    }
+            <div style="flex:1">
+                <div style="font-size:15px;font-weight:500">@salon.Nume</div>
+                <div style="font-size:12px;color:#6b6b6b;margin-top:3px">@salon.Adresa</div>
+                <div style="font-size:12px;color:#6b6b6b;margin-top:2px">@salon.Servicii.Count servicii adăugate</div>
+                @if (salon.Latitudine != null && salon.Longitudine != null)
+                { <div style="font-size:11px;color:#1D9E75;margin-top:4px">📍 Locație setată</div> }
+                else
+                { <div style="font-size:11px;color:#BA7517;margin-top:4px">⚠ Locație lipsă — editează salonul</div> }
+                <div style="margin-top:8px">
+                    @if (salon.Status == SalonBook.Models.StatusSalon.Aprobat)
+                    { <span class="badge badge-green">Aprobat</span> }
+                    else if (salon.Status == SalonBook.Models.StatusSalon.InAsteptare)
+                    { <span class="badge badge-amber">În așteptare</span> }
                     else
-                    {
-                        <span>Fără poză</span>
-                    }
-                </div>
-                <div style="flex:1">
-                    <div style="font-size:15px;font-weight:500">@salon.Nume</div>
-                    <div style="font-size:12px;color:#6b6b6b;margin-top:3px">@salon.Adresa</div>
-                    <div style="font-size:12px;color:#6b6b6b;margin-top:2px">@salon.Servicii.Count servicii adăugate</div>
-                    @if (salon.Latitudine != null && salon.Longitudine != null)
-                    {
-                        <div style="font-size:11px;color:#1D9E75;margin-top:4px">📍 Locație setată</div>
-                    }
-                    else
-                    {
-                        <div style="font-size:11px;color:#BA7517;margin-top:4px">⚠ Locație lipsă — editează salonul</div>
-                    }
-                    <div style="margin-top:8px">
-                        @if (salon.Status == SalonBook.Models.StatusSalon.Aprobat)
-                        {
-                            <span class="badge badge-green">Aprobat</span>
-                        }
-                        else if (salon.Status == SalonBook.Models.StatusSalon.InAsteptare)
-                        {
-                            <span class="badge badge-amber">În așteptare</span>
-                        }
-                        else
-                        {
-                            <span class="badge badge-red">Respins</span>
-                        }
-                    </div>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-                    <a asp-action="EditeazaSalon" asp-route-id="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Editează</a>
-                    <a asp-action="Servicii" asp-route-salonId="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Servicii</a>
-                    <a asp-action="Programari" asp-route-salonId="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Programări</a>
-                    <a asp-action="Calendar" asp-route-salonId="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Calendar</a>
-                    <a asp-action="ExportPDF" asp-route-salonId="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Export PDF</a>
+                    { <span class="badge badge-red">Respins</span> }
                 </div>
             </div>
-        }
-    </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+                <a asp-action="EditeazaSalon" asp-route-id="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Editează</a>
+                <a asp-action="Servicii" asp-route-salonId="@salon.Id" class="btn btn-salon" style="font-size:12px;padding:6px 14px">Servicii</a>
+            </div>
+        </div>
+    }
 </div>

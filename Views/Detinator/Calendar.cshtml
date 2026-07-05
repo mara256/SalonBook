@@ -1,6 +1,22 @@
 @{ ViewData["Title"] = "Calendar programări"; }
 @{ var salon = ViewBag.Salon as SalonBook.Models.Salon; }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .flatpickr-calendar {
+        font-size: 15px !important;
+        width: 320px !important;
+    }
+    .flatpickr-days { width: 100% !important; }
+    .dayContainer { width: 100% !important; min-width: 100% !important; }
+    .flatpickr-day {
+        height: 42px !important;
+        line-height: 42px !important;
+        max-width: none !important;
+    }
+    .flatpickr-current-month { font-size: 16px !important; }
+</style>
+
 <div class="page-body">
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
@@ -68,12 +84,12 @@
             <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:12px;align-items:end">
                 <div>
                     <label style="font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px">Data start</label>
-                    <input type="date" name="dataStart" required
+                    <input type="text" id="dataStart" name="dataStart" required placeholder="Alege data" autocomplete="off"
                            style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px" />
                 </div>
                 <div>
                     <label style="font-size:12px;color:#6b6b6b;display:block;margin-bottom:4px">Data sfârșit</label>
-                    <input type="date" name="dataSfarsit" required
+                    <input type="text" id="dataSfarsit" name="dataSfarsit" required placeholder="Alege data" autocomplete="off"
                            style="width:100%;padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px" />
                 </div>
                 <div>
@@ -110,12 +126,31 @@
 </div>
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ro.js"></script>
 <script>
     const programari = @Html.Raw(ViewBag.ProgramariJson ?? "[]");
     const perioade = @Html.Raw(ViewBag.PerioadeBlockateJson ?? "[]");
     const salonId = @(salon?.Id ?? 0);
     let dataActuala = new Date();
     let vizualizare = 'luna';
+
+    // Initializare calendare mari (Flatpickr) pentru formularul de blocare perioada
+    const fpStart = flatpickr("#dataStart", {
+        dateFormat: "Y-m-d",
+        locale: "ro",
+        minDate: "today",
+        onChange: function(selectedDates) {
+            if (selectedDates[0]) {
+                fpSfarsit.set("minDate", selectedDates[0]);
+            }
+        }
+    });
+    const fpSfarsit = flatpickr("#dataSfarsit", {
+        dateFormat: "Y-m-d",
+        locale: "ro",
+        minDate: "today"
+    });
 
     // Afiseaza lista perioade blocate
     const listaPer = document.getElementById('lista-perioade');

@@ -206,6 +206,55 @@ namespace SalonBook.Controllers
             return RedirectToAction("Servicii", new { salonId = SalonId });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditeazaServiciu(int Id, int SalonId, string Nume,
+            string Categorie, string Descriere, int DurataMinte, decimal Pret)
+        {
+            var userId = _userManager.GetUserId(User)!;
+            var serviciu = await _context.Servicii
+                .Include(s => s.Salon)
+                .ThenInclude(sal => sal!.Detinator)
+                .FirstOrDefaultAsync(s => s.Id == Id && s.Salon!.Detinator!.UserId == userId);
+
+            if (serviciu == null) return Forbid();
+
+            serviciu.Nume = Nume;
+            serviciu.Categorie = Categorie;
+            serviciu.Descriere = Descriere ?? "";
+            serviciu.DurataMinte = DurataMinte;
+            serviciu.Pret = Pret;
+
+            await _context.SaveChangesAsync();
+            TempData["Succes"] = "Serviciul a fost actualizat!";
+            return RedirectToAction("Servicii", new { salonId = SalonId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StergeServiciu(int id, int salonId)
+        {
+            var userId = _userManager.GetUserId(User)!;
+            var serviciu = await _context.Servicii
+                .Include(s => s.Salon)
+                .ThenInclude(sal => sal!.Detinator)
+                .Include(s => s.Programari)
+                .FirstOrDefaultAsync(s => s.Id == id && s.Salon!.Detinator!.UserId == userId);
+
+            if (serviciu == null) return Forbid();
+
+            if (serviciu.Programari.Any())
+            {
+                TempData["Eroare"] = "Nu poți șterge acest serviciu deoarece are programări asociate. Poți edita serviciul în loc să-l ștergi.";
+                return RedirectToAction("Servicii", new { salonId });
+            }
+
+            _context.Servicii.Remove(serviciu);
+            await _context.SaveChangesAsync();
+            TempData["Succes"] = "Serviciul a fost șters.";
+            return RedirectToAction("Servicii", new { salonId });
+        }
+
         public async Task<IActionResult> Programari(int salonId)
         {
             var userId = _userManager.GetUserId(User)!;
@@ -222,8 +271,14 @@ namespace SalonBook.Controllers
                 .Select(cb => cb.ClientId)
                 .ToListAsync();
 
+            var numarNeprezentari = programari
+                .Where(p => p.Status == StatusProgramare.Neprezentat)
+                .GroupBy(p => p.ClientId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
             ViewBag.Salon = salon;
             ViewBag.ClientiBlocati = clientiBlocati;
+            ViewBag.NumarNeprezentari = numarNeprezentari;
             await SetPrimulSalonIdAsync(userId);
             return View(programari);
         }
@@ -594,6 +649,18 @@ public async Task<IActionResult> ExportPDFZilnic(int salonId)
             await _programareService.ActualizeazaStatusAsync(
                 programareId, StatusProgramare.Onorata, userId);
             TempData["Succes"] = "Programarea a fost marcată ca onorată.";
+            return RedirectToAction("Programari", new { salonId });
+        }
+
+        // Marcheaza ca Neprezentat (client nu a venit, dar nici nu a anulat)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcheazaNeprezentat(int programareId, int salonId)
+        {
+            var userId = _userManager.GetUserId(User)!;
+            await _programareService.ActualizeazaStatusAsync(
+                programareId, StatusProgramare.Neprezentat, userId);
+            TempData["Succes"] = "Programarea a fost marcată ca neprezentare.";
             return RedirectToAction("Programari", new { salonId });
         }
 

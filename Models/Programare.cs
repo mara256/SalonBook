@@ -8,7 +8,8 @@ namespace SalonBook.Models
         Acceptata,
         Respinsa,
         Anulata,
-        Onorata
+        Onorata,
+        Neprezentat
     }
 
     public class Programare

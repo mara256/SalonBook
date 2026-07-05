@@ -3,6 +3,7 @@
     ViewData["Title"] = "Programări salon"; 
     var salon = ViewBag.Salon as SalonBook.Models.Salon;
     var clientiBlocati = ViewBag.ClientiBlocati as List<string> ?? new List<string>();
+    var numarNeprezentari = ViewBag.NumarNeprezentari as Dictionary<string, int> ?? new Dictionary<string, int>();
 }
 
 <div class="page-body">
@@ -15,7 +16,7 @@
     </div>
 
     <!-- Filtre status -->
-    <div style="display:flex;gap:8px;margin-bottom:16px">
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span style="font-size:12px;color:#6b6b6b;align-self:center">Filtrează:</span>
         <span class="badge badge-amber">
             În așteptare (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.InAsteptare))
@@ -28,6 +29,9 @@
         </span>
         <span class="badge" style="background:#EAF3DE;color:#3B6D11">
             Onorate (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Onorata))
+        </span>
+        <span class="badge" style="background:#F0EEFF;color:#6b5fc7">
+            Neprezentări (@Model.Count(p => p.Status == SalonBook.Models.StatusProgramare.Neprezentat))
         </span>
     </div>
 
@@ -47,12 +51,20 @@
                 @foreach (var p in Model.OrderByDescending(p => p.DataOra))
                 {
                     var esteBlocat = clientiBlocati.Contains(p.ClientId);
+                    var neprezentariClient = numarNeprezentari.ContainsKey(p.ClientId) ? numarNeprezentari[p.ClientId] : 0;
+                    var esteProblematic = neprezentariClient >= 2;
                     <tr style="@(esteBlocat ? "opacity:0.5" : "")">
                         <td>
                             @p.Client?.Prenume @p.Client?.Nume
                             @if (esteBlocat)
                             {
                                 <span class="badge badge-red" style="margin-left:6px">Blocat</span>
+                            }
+                            @if (!esteBlocat && esteProblematic)
+                            {
+                                <span class="badge" style="background:#FCEBEB;color:#A32D2D;margin-left:6px" title="Acest client a lipsit de @neprezentariClient ori fără să anuleze">
+                                    ⚠ @neprezentariClient neprezentări
+                                </span>
                             }
                         </td>
                         <td style="color:#6b6b6b">@p.Client?.PhoneNumber</td>
@@ -75,6 +87,9 @@
                                     break;
                                 case SalonBook.Models.StatusProgramare.Anulata:
                                     <span class="badge badge-red">Anulată</span>
+                                    break;
+                                case SalonBook.Models.StatusProgramare.Neprezentat:
+                                    <span class="badge" style="background:#F0EEFF;color:#6b5fc7">✕ Neprezentat</span>
                                     break;
                             }
                         </td>
@@ -110,6 +125,19 @@
                                             ✓ Onorat
                                         </button>
                                     </form>
+
+                                    @if (p.DataOra < DateTime.Now)
+                                    {
+                                        <form asp-action="MarcheazaNeprezentat" method="post" style="display:inline"
+                                              onsubmit="return confirm('Marchezi că acest client NU s-a prezentat la programare?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="programareId" value="@p.Id" />
+                                            <input type="hidden" name="salonId" value="@salon?.Id" />
+                                            <button type="submit" style="background:#F0EEFF;color:#6b5fc7;border:none;cursor:pointer;padding:4px 10px;border-radius:4px;font-size:11px">
+                                                ✕ Nu s-a prezentat
+                                            </button>
+                                        </form>
+                                    }
                                 }
 
                                 @if (!esteBlocat)
@@ -120,7 +148,7 @@
                                         <input type="hidden" name="clientId" value="@p.ClientId" />
                                         <input type="hidden" name="salonId" value="@salon?.Id" />
                                         <input type="hidden" name="motiv" value="Client absent" />
-                                        <button type="submit" class="badge" style="background:#f5f5f4;color:#6b6b6b;border:none;cursor:pointer;padding:4px 10px">
+                                        <button type="submit" class="badge" style="background:@(esteProblematic ? "#FCEBEB" : "#f5f5f4");color:@(esteProblematic ? "#A32D2D" : "#6b6b6b");border:none;cursor:pointer;padding:4px 10px">
                                             Blochează
                                         </button>
                                     </form>

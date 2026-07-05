@@ -1,48 +1,58 @@
 @model SalonBook.Models.Salon
 @{ ViewData["Title"] = "Servicii — " + Model.Nume; }
-
 <div class="page-body">
     <div class="page-header">
         <h2>Servicii — @Model.Nume</h2>
         <p>Adaugă și gestionează serviciile oferite</p>
     </div>
-
     <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start">
-
-        <!-- Lista servicii existente -->
+<!-- Lista servicii existente -->
         <div>
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">Servicii adăugate (@Model.Servicii.Count)</div>
-            @if (!Model.Servicii.Any())
+@if (!Model.Servicii.Any())
             {
                 <p style="color:#9b9b9b;font-size:13px">Niciun serviciu adăugat încă.</p>
             }
-            @foreach (var s in Model.Servicii)
+@foreach (var s in Model.Servicii)
             {
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:0.5px solid #e5e5e5;border-radius:8px;margin-bottom:8px">
                     <div>
                         <div style="font-size:13px;font-weight:500">@s.Nume</div>
                         <div style="font-size:11px;color:#6b6b6b;margin-top:3px">
                             <span class="badge badge-purple">@s.Categorie</span>
-                            &nbsp;@s.DurataMinte min
+&nbsp;@s.DurataMinte min
                         </div>
                     </div>
-                    <div style="font-size:14px;font-weight:500">@s.Pret lei</div>
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-size:14px;font-weight:500">@s.Pret lei</div>
+                        <button type="button" class="btn"
+                                style="font-size:11px;padding:4px 10px"
+                                onclick="deschideEditare(@s.Id, @Model.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(s.Nume))', '@s.Categorie', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(s.Descriere))', @s.DurataMinte, @s.Pret)">
+                            Editează
+                        </button>
+                        <form asp-action="StergeServiciu" method="post" style="display:inline"
+                              onsubmit="return confirm('Ștergi serviciul &quot;@s.Nume&quot;? Nu poate fi anulat.')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <input type="hidden" name="salonId" value="@Model.Id" />
+                            <button type="submit" style="background:none;border:none;color:#A32D2D;font-size:11px;cursor:pointer;padding:4px 6px">
+                                ✕ Șterge
+                            </button>
+                        </form>
+                    </div>
                 </div>
             }
         </div>
-
-        <!-- Formular adaugare serviciu nou -->
+<!-- Formular adaugare serviciu nou -->
         <div style="border:0.5px solid #e5e5e5;border-radius:12px;padding:20px;background:#fafaf9">
             <div style="font-size:14px;font-weight:500;margin-bottom:16px">Adaugă serviciu nou</div>
             <form asp-action="AdaugaServiciu" method="post">
-                @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                 <input type="hidden" name="SalonId" value="@Model.Id" />
-
                 <div class="form-group">
                     <label>Nume serviciu</label>
                     <input name="Nume" placeholder="ex: Tuns + coafat" required />
                 </div>
-
                 <div class="form-group">
                     <label>Categorie</label>
                     <select name="Categorie" required>
@@ -55,12 +65,10 @@
                         <option value="Machiaj">Machiaj</option>
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label>Descriere</label>
                     <textarea name="Descriere" placeholder="Descriere scurtă..."></textarea>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Durată (minute)</label>
@@ -71,13 +79,76 @@
                         <input name="Pret" type="number" min="0" step="1" placeholder="120" required />
                     </div>
                 </div>
-
                 <button type="submit" class="btn btn-primary btn-block">Adaugă serviciu</button>
             </form>
         </div>
     </div>
-
     <div style="margin-top:16px">
         <a asp-action="Saloane" class="btn">← Înapoi la saloane</a>
     </div>
 </div>
+
+<!-- Modal editare serviciu -->
+<div id="modal-editare" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:90%;position:relative">
+        <button type="button" onclick="inchideEditare()" style="position:absolute;top:12px;right:12px;border:none;background:none;font-size:20px;cursor:pointer;color:#6b6b6b">×</button>
+        <div style="font-size:15px;font-weight:500;margin-bottom:16px">Editează serviciul</div>
+        <form asp-action="EditeazaServiciu" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="edit-id" />
+            <input type="hidden" name="SalonId" value="@Model.Id" />
+            <div class="form-group">
+                <label>Nume serviciu</label>
+                <input name="Nume" id="edit-nume" required />
+            </div>
+            <div class="form-group">
+                <label>Categorie</label>
+                <select name="Categorie" id="edit-categorie" required>
+                    <option value="Coafor">Coafor</option>
+                    <option value="Frizerie">Frizerie</option>
+                    <option value="Manichiura">Manichiură</option>
+                    <option value="Proceduri estetice">Proceduri estetice</option>
+                    <option value="Masaj">Masaj</option>
+                    <option value="Machiaj">Machiaj</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Descriere</label>
+                <textarea name="Descriere" id="edit-descriere"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Durată (minute)</label>
+                    <input name="DurataMinte" id="edit-durata" type="number" min="1" step="1" required />
+                </div>
+                <div class="form-group">
+                    <label>Preț (lei)</label>
+                    <input name="Pret" id="edit-pret" type="number" min="0" step="1" required />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Salvează modificările</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function deschideEditare(id, salonId, nume, categorie, descriere, durata, pret) {
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-nume').value = nume;
+        document.getElementById('edit-categorie').value = categorie;
+        document.getElementById('edit-descriere').value = descriere;
+        document.getElementById('edit-durata').value = durata;
+        document.getElementById('edit-pret').value = pret;
+        document.getElementById('modal-editare').style.display = 'flex';
+    }
+
+    function inchideEditare() {
+        document.getElementById('modal-editare').style.display = 'none';
+    }
+
+    document.getElementById('modal-editare').addEventListener('click', function(e) {
+        if (e.target === this) inchideEditare();
+    });
+</script>
+}

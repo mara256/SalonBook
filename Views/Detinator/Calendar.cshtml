@@ -135,7 +135,6 @@
     let dataActuala = new Date();
     let vizualizare = 'luna';
 
-    // Initializare calendare mari (Flatpickr) pentru formularul de blocare perioada
     const fpStart = flatpickr("#dataStart", {
         dateFormat: "Y-m-d",
         locale: "ro",
@@ -152,7 +151,6 @@
         minDate: "today"
     });
 
-    // Afiseaza lista perioade blocate
     const listaPer = document.getElementById('lista-perioade');
     if (listaPer && perioade.length > 0) {
         perioade.forEach(pb => {

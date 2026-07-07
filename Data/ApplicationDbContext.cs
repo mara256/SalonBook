@@ -70,7 +70,6 @@ namespace SalonBook.Data
                 .HasForeignKey(r => r.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ADAUGAT — PerioadaBlocata
             builder.Entity<PerioadaBlocata>()
                 .HasOne(p => p.Salon)
                 .WithMany()
